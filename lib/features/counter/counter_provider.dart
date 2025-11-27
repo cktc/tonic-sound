@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:volume_controller/volume_controller.dart';
 import '../../core/audio/services/tonic_audio_service.dart';
 import '../../core/audio/services/playback_state.dart';
 import '../../shared/constants/enums.dart';
@@ -7,15 +8,21 @@ import '../../shared/constants/tonic_catalog.dart';
 
 /// Provider managing the Counter screen state and playback actions.
 /// Acts as a bridge between the UI and the audio service.
+/// Syncs the strength slider with iOS system volume for hardware button control.
 class PlaybackProvider extends ChangeNotifier {
   PlaybackProvider({required TonicAudioService audioService})
       : _audioService = audioService {
     // Subscribe to audio service state changes
     _subscription = _audioService.stateStream.listen(_onStateChanged);
+
+    // Initialize volume sync with system
+    _initVolumeSync();
   }
 
   final TonicAudioService _audioService;
   StreamSubscription<PlaybackState>? _subscription;
+  StreamSubscription<double>? _volumeSubscription;
+  bool _isUpdatingVolume = false;  // Prevent feedback loops
 
   /// Current playback state
   PlaybackState get state => _audioService.currentState;
@@ -62,6 +69,31 @@ class PlaybackProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Initialize bidirectional volume sync with iOS system volume
+  Future<void> _initVolumeSync() async {
+    try {
+      // Don't show system volume UI when we change volume programmatically
+      VolumeController().showSystemUI = false;
+
+      // Get current system volume and sync our strength to it
+      final currentVolume = await VolumeController().getVolume();
+      _strength = currentVolume.clamp(0.0, 1.0);
+
+      // Listen for hardware volume button changes
+      _volumeSubscription = VolumeController().listener((volume) {
+        if (!_isUpdatingVolume) {
+          _strength = volume.clamp(0.0, 1.0);
+          _audioService.setStrengthImmediate(_strength);
+          notifyListeners();
+        }
+      });
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[PlaybackProvider] Volume sync init failed: $e');
+    }
+  }
+
   /// Select a Tonic for the counter
   void selectTonic(Tonic tonic) {
     _selectedTonic = tonic;
@@ -84,7 +116,7 @@ class PlaybackProvider extends ChangeNotifier {
   }
 
   /// Set the strength (volume)
-  /// Updates immediately for responsive UI, syncs to audio service for playback.
+  /// Updates immediately for responsive UI, syncs to both audio service and system volume.
   void setStrength(double value) {
     final clampedValue = value.clamp(0.0, 1.0);
 
@@ -94,10 +126,26 @@ class PlaybackProvider extends ChangeNotifier {
     _strength = clampedValue;
 
     // Update audio service directly (sync call, no stream notification needed)
-    // This updates the audio volume without triggering a second rebuild
     _audioService.setStrengthImmediate(clampedValue);
 
+    // Sync to iOS system volume (allows hardware buttons to reflect our slider)
+    _updateSystemVolume(clampedValue);
+
     notifyListeners();
+  }
+
+  /// Update system volume without triggering our listener callback
+  void _updateSystemVolume(double volume) {
+    _isUpdatingVolume = true;
+    try {
+      VolumeController().setVolume(volume, showSystemUI: false);
+    } catch (e) {
+      debugPrint('[PlaybackProvider] Failed to set system volume: $e');
+    }
+    // Small delay to ensure listener doesn't pick up our own change
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _isUpdatingVolume = false;
+    });
   }
 
   /// Dispense the currently selected sound (start playback)
@@ -146,6 +194,8 @@ class PlaybackProvider extends ChangeNotifier {
   @override
   void dispose() {
     _subscription?.cancel();
+    _volumeSubscription?.cancel();
+    VolumeController().removeListener();
     super.dispose();
   }
 }
