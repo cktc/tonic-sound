@@ -36,6 +36,7 @@ class TonicAudioService implements TonicAudioServiceInterface {
   Timer? _countdownTimer;
   Timer? _feedTimer;
   DateTime? _sessionStartTime;
+  DateTime? _lastCountdownUpdate;  // Track when we last updated countdown
 
   bool _isInitialized = false;
   bool _isDisposed = false;
@@ -57,7 +58,7 @@ class TonicAudioService implements TonicAudioServiceInterface {
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration(
       avAudioSessionCategory: AVAudioSessionCategory.playback,
-      avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.mixWithOthers,
+      avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.duckOthers,
       avAudioSessionMode: AVAudioSessionMode.defaultMode,
       androidAudioAttributes: AndroidAudioAttributes(
         contentType: AndroidAudioContentType.music,
@@ -66,16 +67,35 @@ class TonicAudioService implements TonicAudioServiceInterface {
       androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
     ));
 
-    // Initialize PCM sound
+    // Initialize PCM sound with background audio enabled
     await FlutterPcmSound.setup(
       sampleRate: NoiseGenerator.sampleRate,
       channelCount: 1,
+      iosAllowBackgroundAudio: true,  // Enable background audio on iOS
     );
 
-    // Set up feed callback for buffer management
-    FlutterPcmSound.setFeedThreshold(NoiseGenerator.recommendedBufferSize);
+    // Set up native feed callback for background-safe audio feeding
+    // This callback is triggered by the native audio system when more samples are needed
+    FlutterPcmSound.setFeedCallback(_onNativeFeedRequest);
+
+    // Set threshold for when to request more audio (larger buffer for background resilience)
+    // ~500ms buffer ensures smooth playback during app state transitions
+    FlutterPcmSound.setFeedThreshold(NoiseGenerator.sampleRate ~/ 2);
 
     _isInitialized = true;
+  }
+
+  /// Native callback when audio system needs more samples
+  /// This is called by the native layer and works even when app is backgrounded
+  void _onNativeFeedRequest(int remainingFrames) {
+    if (_currentGenerator == null ||
+        _state.status != PlaybackStatus.dispensing ||
+        !_isInitialized) {
+      return;
+    }
+
+    // Feed a larger buffer for background resilience (~200ms)
+    _feedBuffer(_state.strength, sampleCount: NoiseGenerator.sampleRate ~/ 5);
   }
 
   @override
@@ -226,6 +246,20 @@ class TonicAudioService implements TonicAudioServiceInterface {
   }
 
   @override
+  void setStrengthImmediate(double strength) {
+    final clampedStrength = strength.clamp(0.0, 1.0);
+
+    // Update state directly without stream notification to avoid double rebuilds
+    // This is used during real-time slider dragging for responsive volume changes
+    _state = _state.copyWith(
+      strength: clampedStrength,
+      safetyLevel: getSafetyLevel(clampedStrength),
+    );
+
+    // Volume will be applied on next buffer generation (within 25ms)
+  }
+
+  @override
   SafetyLevel getSafetyLevel(double strength) {
     if (strength <= 0.6) return SafetyLevel.safe;
     if (strength <= 0.8) return SafetyLevel.moderate;
@@ -256,17 +290,18 @@ class TonicAudioService implements TonicAudioServiceInterface {
   }
 
   Future<void> _startPcmFeed(double strength) async {
-    // Generate and feed initial buffer
-    await _feedBuffer(strength);
+    // Feed a large initial buffer (~1 second) for smooth startup and background resilience
+    await _feedBuffer(strength, sampleCount: NoiseGenerator.sampleRate);
 
-    // Set up periodic feed (every ~25ms to stay ahead of playback)
+    // Also set up a backup timer for foreground feeding (supplements native callback)
+    // This ensures continuous audio even if native callbacks are delayed
     _feedTimer = Timer.periodic(
-      const Duration(milliseconds: 25),
-      (_) => _feedBuffer(_state.strength),
+      const Duration(milliseconds: 100),
+      (_) => _feedBuffer(_state.strength, sampleCount: NoiseGenerator.sampleRate ~/ 10),
     );
   }
 
-  Future<void> _feedBuffer(double strength) async {
+  Future<void> _feedBuffer(double strength, {int? sampleCount}) async {
     if (_currentGenerator == null ||
         _state.status != PlaybackStatus.dispensing ||
         !_isInitialized) {
@@ -280,10 +315,9 @@ class TonicAudioService implements TonicAudioServiceInterface {
       effectiveStrength = strength * fadeProgress;
     }
 
-    // Generate samples
-    final rawSamples = _currentGenerator!.generate(
-      NoiseGenerator.recommendedBufferSize,
-    );
+    // Generate samples (use provided count or default)
+    final count = sampleCount ?? NoiseGenerator.recommendedBufferSize;
+    final rawSamples = _currentGenerator!.generate(count);
 
     // Apply volume
     final scaledSamples = Int16List(rawSamples.length);
@@ -296,8 +330,16 @@ class TonicAudioService implements TonicAudioServiceInterface {
   }
 
   void _startCountdownTimer() {
+    _lastCountdownUpdate = DateTime.now();
+
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      final newRemaining = _state.remainingSeconds - 1;
+      // Calculate actual elapsed time (handles background suspension)
+      final now = DateTime.now();
+      final actualElapsed = now.difference(_lastCountdownUpdate!).inSeconds;
+      _lastCountdownUpdate = now;
+
+      // Subtract actual elapsed time (usually 1 second, but more if app was backgrounded)
+      final newRemaining = (_state.remainingSeconds - actualElapsed).clamp(0, _state.dosageMinutes * 60);
 
       if (newRemaining <= 0) {
         cap();

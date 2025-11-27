@@ -46,6 +46,11 @@ abstract class TonicAudioServiceInterface {
   /// [strength] - New volume level 0.0-1.0
   Future<void> setStrength(double strength);
 
+  /// Adjust the strength immediately without notifying stream listeners.
+  /// Use this for real-time slider updates to avoid double rebuilds.
+  /// [strength] - New volume level 0.0-1.0
+  void setStrengthImmediate(double strength);
+
   /// Get the safety level for a given strength value.
   /// Returns SafetyLevel.safe (<= 0.6), moderate (<= 0.8), or high (> 0.8)
   SafetyLevel getSafetyLevel(double strength);

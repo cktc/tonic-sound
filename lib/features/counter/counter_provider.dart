@@ -84,13 +84,18 @@ class PlaybackProvider extends ChangeNotifier {
   }
 
   /// Set the strength (volume)
+  /// Updates immediately for responsive UI, syncs to audio service for playback.
   void setStrength(double value) {
     final clampedValue = value.clamp(0.0, 1.0);
+
+    // Skip if no change (prevents unnecessary rebuilds during fast dragging)
+    if (_strength == clampedValue) return;
+
     _strength = clampedValue;
 
-    // Always update audio service to keep state in sync
-    // Audio service will apply volume change on next buffer generation if playing
-    _audioService.setStrength(clampedValue);
+    // Update audio service directly (sync call, no stream notification needed)
+    // This updates the audio volume without triggering a second rebuild
+    _audioService.setStrengthImmediate(clampedValue);
 
     notifyListeners();
   }
