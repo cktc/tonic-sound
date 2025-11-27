@@ -51,11 +51,11 @@ workflows:
       groups:
         - app_store_credentials
       vars:
-        BUNDLE_ID: "com.neogridpoint.tonicsound.dev"
+        BUNDLE_ID: "com.neogridpoint.tonicsound"
         APP_STORE_APP_ID: 6755808046
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.neogridpoint.tonicsound.dev
+        bundle_identifier: com.neogridpoint.tonicsound
 
     triggering:
       events:
@@ -117,8 +117,8 @@ workflows:
             <string>manual</string>
             <key>provisioningProfiles</key>
             <dict>
-              <key>com.neogridpoint.tonicsound.dev</key>
-              <string>Tonic Sound Dev App Store</string>
+              <key>com.neogridpoint.tonicsound</key>
+              <string>Tonic Sound App Store</string>
             </dict>
           </dict>
           </plist>
