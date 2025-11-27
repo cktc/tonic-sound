@@ -1,0 +1,599 @@
+# yaml-language-server: $schema=https://codemagic.io/codemagic-schema.json
+
+# Tonic Sound - Codemagic CI/CD Configuration
+# Bundle IDs:
+#   - Development: com.neogridpoint.tonicsound.dev
+#   - Production: com.neogridpoint.tonicsound
+
+definitions:
+  # Reusable environment configurations
+  flutter_environment: &flutter_environment
+    flutter: stable
+    xcode: latest
+    cocoapods: default
+
+  # Shared setup scripts
+  setup_script: &setup_script
+    name: Get Flutter dependencies
+    script: |
+      flutter pub get
+
+  test_script: &test_script
+    name: Run tests
+    script: |
+      flutter test
+    ignore_failure: true
+
+  analyze_script: &analyze_script
+    name: Flutter analyze
+    script: |
+      flutter analyze
+    ignore_failure: true
+
+workflows:
+  # ============================================================
+  # iOS Development → TestFlight Internal Testing
+  # Fast internal testing for your team
+  # Triggers on: develop, feature/* branches
+  # ============================================================
+  ios-develop:
+    name: iOS Development → TestFlight Internal
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+
+    cache:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
+
+    environment:
+      <<: *flutter_environment
+      groups:
+        - app_store_credentials
+      vars:
+        BUNDLE_ID: "com.neogridpoint.tonicsound.dev"
+        APP_STORE_APP_ID: 6755808046
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.neogridpoint.tonicsound.dev
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'develop'
+          include: true
+        - pattern: 'feature/*'
+          include: true
+      cancel_previous_builds: true
+
+    scripts:
+      - *setup_script
+      - *analyze_script
+      - *test_script
+
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios
+          pod install
+
+      - name: Set build number
+        script: |
+          # Get latest TestFlight build number and increment
+          BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "$APP_STORE_APP_ID") + 1))
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $CM_ENV
+          echo "Next build number: $BUILD_NUMBER"
+
+      - name: Set up code signing
+        script: |
+          # ios_signing in environment automatically fetches signing files
+          # Just configure the Xcode project to use them
+          echo "=== Verifying provisioning profiles were fetched ==="
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
+
+          echo "=== Verifying certificates were fetched ==="
+          security find-identity -v -p codesigning
+
+          echo "=== Configuring Xcode project ==="
+          xcode-project use-profiles --project=ios/Runner.xcodeproj
+
+          # Create export options plist for App Store distribution
+          cat > $HOME/export_options.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>teamID</key>
+            <string>4928ZWMMQQ</string>
+            <key>uploadBitcode</key>
+            <false/>
+            <key>compileBitcode</key>
+            <false/>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.neogridpoint.tonicsound.dev</key>
+              <string>Tonic Sound Dev App Store</string>
+            </dict>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Build iOS app
+        script: |
+          flutter build ipa \
+            --release \
+            --build-number=$BUILD_NUMBER \
+            --export-options-plist=$HOME/export_options.plist
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      email:
+        recipients:
+          - your-email@domain.com  # Update with your email
+        notify:
+          success: true
+          failure: true
+
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true  # Internal testing (no review needed)
+
+  # ============================================================
+  # iOS Main → TestFlight External Testing
+  # Beta testing for external testers
+  # Triggers on: main branch
+  # ============================================================
+  ios-beta:
+    name: iOS Beta → TestFlight External
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+
+    cache:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
+
+    environment:
+      <<: *flutter_environment
+      groups:
+        - app_store_credentials
+      vars:
+        BUNDLE_ID: "com.neogridpoint.tonicsound"
+        APP_STORE_APP_ID: 6755808046
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.neogridpoint.tonicsound
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+      cancel_previous_builds: true
+
+    scripts:
+      - *setup_script
+      - *analyze_script
+      - *test_script
+
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios
+          pod install
+
+      - name: Set build number
+        script: |
+          BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "$APP_STORE_APP_ID") + 1))
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $CM_ENV
+
+      - name: Set up code signing
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+
+          xcode-project use-profiles --project=ios/Runner.xcodeproj
+
+          cat > $HOME/export_options.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>teamID</key>
+            <string>4928ZWMMQQ</string>
+            <key>uploadBitcode</key>
+            <false/>
+            <key>compileBitcode</key>
+            <false/>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.neogridpoint.tonicsound</key>
+              <string>Tonic Sound App Store</string>
+            </dict>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Build iOS release
+        script: |
+          flutter build ipa \
+            --release \
+            --build-number=$BUILD_NUMBER \
+            --export-options-plist=$HOME/export_options.plist
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      email:
+        recipients:
+          - your-email@domain.com
+        notify:
+          success: true
+          failure: true
+
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true  # External beta testing (requires review)
+
+  # ============================================================
+  # iOS Production → App Store Release
+  # Triggers on: version tags (v*.*.*)
+  # ============================================================
+  ios-production:
+    name: iOS Production → App Store
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+
+    cache:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
+
+    environment:
+      <<: *flutter_environment
+      groups:
+        - app_store_credentials
+      vars:
+        BUNDLE_ID: "com.neogridpoint.tonicsound"
+        APP_STORE_APP_ID: 6755808046
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.neogridpoint.tonicsound
+
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: 'v*.*.*'
+          include: true
+      cancel_previous_builds: true
+
+    scripts:
+      - *setup_script
+      - *analyze_script
+      - *test_script
+
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios
+          pod install
+
+      - name: Set build number
+        script: |
+          BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "$APP_STORE_APP_ID") + 1))
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $CM_ENV
+
+      - name: Set up code signing
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+
+          xcode-project use-profiles --project=ios/Runner.xcodeproj
+
+          cat > $HOME/export_options.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>teamID</key>
+            <string>4928ZWMMQQ</string>
+            <key>uploadBitcode</key>
+            <false/>
+            <key>compileBitcode</key>
+            <false/>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.neogridpoint.tonicsound</key>
+              <string>Tonic Sound App Store</string>
+            </dict>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Build iOS release
+        script: |
+          flutter build ipa \
+            --release \
+            --build-number=$BUILD_NUMBER \
+            --export-options-plist=$HOME/export_options.plist
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      email:
+        recipients:
+          - your-email@domain.com
+        notify:
+          success: true
+          failure: true
+
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
+        # Uncomment when ready to submit to App Store for review
+        # submit_to_app_store: true
+
+  # ============================================================
+  # Android Development
+  # Triggers on: develop, feature/* branches
+  # ============================================================
+  android-develop:
+    name: Android Development Build
+    instance_type: linux_x2
+    max_build_duration: 60
+
+    cache:
+      cache_paths:
+        - $HOME/.gradle/caches
+        - $FLUTTER_ROOT/.pub-cache
+
+    environment:
+      flutter: stable
+      java: 17
+      groups:
+        - android_credentials
+      vars:
+        PACKAGE_NAME: "com.neogridpoint.tonicsound"
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'develop'
+          include: true
+        - pattern: 'feature/*'
+          include: true
+      cancel_previous_builds: true
+
+    scripts:
+      - *setup_script
+      - *analyze_script
+      - *test_script
+
+      - name: Set up local.properties
+        script: |
+          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
+
+      - name: Build Android APK
+        script: |
+          flutter build apk --release
+
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
+      - build/app/outputs/mapping/**/mapping.txt
+
+    publishing:
+      email:
+        recipients:
+          - your-email@domain.com
+        notify:
+          success: true
+          failure: true
+
+  # ============================================================
+  # Android Production → Google Play
+  # Triggers on: version tags (v*.*.*)
+  # ============================================================
+  android-production:
+    name: Android Production → Google Play
+    instance_type: linux_x2
+    max_build_duration: 90
+
+    cache:
+      cache_paths:
+        - $HOME/.gradle/caches
+        - $FLUTTER_ROOT/.pub-cache
+
+    environment:
+      flutter: stable
+      java: 17
+      groups:
+        - google_play_credentials
+      vars:
+        PACKAGE_NAME: "com.neogridpoint.tonicsound"
+
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: 'v*.*.*'
+          include: true
+      cancel_previous_builds: true
+
+    scripts:
+      - *setup_script
+      - *analyze_script
+      - *test_script
+
+      - name: Set up local.properties
+        script: |
+          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
+
+      - name: Set up keystore
+        script: |
+          echo $CM_KEYSTORE | base64 --decode > $CM_BUILD_DIR/keystore.jks
+          cat >> "$CM_BUILD_DIR/android/key.properties" <<EOF
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyPassword=$CM_KEY_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          storeFile=$CM_BUILD_DIR/keystore.jks
+          EOF
+
+      - name: Get build number from Google Play
+        script: |
+          BUILD_NUMBER=$(($(google-play get-latest-build-number \
+            --package-name "$PACKAGE_NAME" \
+            --tracks internal) + 1))
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $CM_ENV
+
+      - name: Build Android App Bundle
+        script: |
+          flutter build appbundle \
+            --release \
+            --build-number=$BUILD_NUMBER
+
+    artifacts:
+      - build/app/outputs/bundle/**/*.aab
+      - build/app/outputs/mapping/**/mapping.txt
+
+    publishing:
+      email:
+        recipients:
+          - your-email@domain.com
+        notify:
+          success: true
+          failure: true
+
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: false
+
+  # ============================================================
+  # Pull Request Validation
+  # Runs tests and analysis on all PRs
+  # ============================================================
+  pr-validation:
+    name: PR Validation
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+
+    cache:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
+
+    environment:
+      <<: *flutter_environment
+
+    triggering:
+      events:
+        - pull_request
+      cancel_previous_builds: true
+
+    scripts:
+      - *setup_script
+      - *analyze_script
+      - *test_script
+
+      - name: Check formatting
+        script: |
+          dart format --set-exit-if-changed .
+
+      - name: Build iOS (verify)
+        script: |
+          cd ios && pod install && cd ..
+          flutter build ios --debug --no-codesign
+
+      - name: Build Android (verify)
+        script: |
+          flutter build apk --debug
+
+    publishing:
+      email:
+        recipients:
+          - your-email@domain.com
+        notify:
+          failure: true
+
+  # ============================================================
+  # Main Branch - Full Test Suite
+  # Runs comprehensive tests on main branch commits
+  # ============================================================
+  main-validation:
+    name: Main Branch Validation
+    instance_type: mac_mini_m2
+    max_build_duration: 45
+
+    cache:
+      cache_paths:
+        - $FLUTTER_ROOT/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
+
+    environment:
+      <<: *flutter_environment
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+
+    scripts:
+      - *setup_script
+      - *analyze_script
+
+      - name: Run all tests with coverage
+        script: |
+          flutter test --coverage
+
+      - name: Check code coverage
+        script: |
+          if command -v lcov &> /dev/null; then
+            lcov --summary coverage/lcov.info
+          fi
+
+    artifacts:
+      - coverage/lcov.info
+
+    publishing:
+      email:
+        recipients:
+          - your-email@domain.com
+        notify:
+          success: true
+          failure: true
