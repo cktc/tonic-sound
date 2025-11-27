@@ -53,5 +53,8 @@
 	<!-- Required by audio framework - Tonic does not record audio -->
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Tonic does not use the microphone. This permission is required by the audio framework but will never be requested.</string>
+	<!-- Export compliance - App does not use encryption -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
