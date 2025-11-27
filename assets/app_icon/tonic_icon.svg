@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <!-- Background gradient - deep espresso with warm undertones -->
+    <radialGradient id="bgGradient" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#1C1816"/>
+      <stop offset="60%" stop-color="#0F0D0B"/>
+      <stop offset="100%" stop-color="#0A0908"/>
+    </radialGradient>
+
+    <!-- Gold gradient for the droplet -->
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E8C77B"/>
+      <stop offset="40%" stop-color="#D4A855"/>
+      <stop offset="100%" stop-color="#9A7830"/>
+    </linearGradient>
+
+    <!-- Inner glow gradient -->
+    <radialGradient id="innerGlow" cx="50%" cy="35%" r="50%">
+      <stop offset="0%" stop-color="#FFFCF5" stop-opacity="0.9"/>
+      <stop offset="30%" stop-color="#E8C77B" stop-opacity="0.6"/>
+      <stop offset="70%" stop-color="#D4A855" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#D4A855" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Outer glow for the droplet -->
+    <filter id="dropletGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="20" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Subtle ambient glow -->
+    <radialGradient id="ambientGlow" cx="50%" cy="45%" r="40%">
+      <stop offset="0%" stop-color="#D4A855" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#D4A855" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Glass highlight on droplet -->
+    <linearGradient id="glassHighlight" x1="30%" y1="0%" x2="70%" y2="50%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Decorative ring gradient -->
+    <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B7340"/>
+      <stop offset="50%" stop-color="#D4A855"/>
+      <stop offset="100%" stop-color="#8B7340"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" fill="url(#bgGradient)"/>
+
+  <!-- Ambient glow behind droplet -->
+  <ellipse cx="512" cy="520" rx="280" ry="300" fill="url(#ambientGlow)"/>
+
+  <!-- Decorative outer ring - Victorian apothecary style -->
+  <circle cx="512" cy="512" r="420" fill="none" stroke="url(#ringGradient)" stroke-width="1.5" opacity="0.3"/>
+
+  <!-- Inner decorative ring -->
+  <circle cx="512" cy="512" r="380" fill="none" stroke="#3D352E" stroke-width="1" opacity="0.5"/>
+
+  <!-- Decorative corner accents - top left -->
+  <path d="M180 180 L180 220 M180 180 L220 180" stroke="#D4A855" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
+  <!-- top right -->
+  <path d="M844 180 L844 220 M844 180 L804 180" stroke="#D4A855" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
+  <!-- bottom left -->
+  <path d="M180 844 L180 804 M180 844 L220 844" stroke="#D4A855" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
+  <!-- bottom right -->
+  <path d="M844 844 L844 804 M844 844 L804 844" stroke="#D4A855" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
+
+  <!-- Main droplet shape with glow -->
+  <g filter="url(#dropletGlow)">
+    <!-- Droplet shadow/depth -->
+    <path d="M512 220
+             C512 220, 340 420, 340 580
+             C340 700, 410 800, 512 800
+             C614 800, 684 700, 684 580
+             C684 420, 512 220, 512 220 Z"
+          fill="#9A7830" opacity="0.3" transform="translate(8, 8)"/>
+
+    <!-- Main droplet body -->
+    <path d="M512 220
+             C512 220, 340 420, 340 580
+             C340 700, 410 800, 512 800
+             C614 800, 684 700, 684 580
+             C684 420, 512 220, 512 220 Z"
+          fill="url(#goldGradient)"/>
+
+    <!-- Inner luminous glow -->
+    <path d="M512 280
+             C512 280, 380 440, 380 570
+             C380 670, 435 750, 512 750
+             C589 750, 644 670, 644 570
+             C644 440, 512 280, 512 280 Z"
+          fill="url(#innerGlow)"/>
+  </g>
+
+  <!-- Glass highlight on droplet - elegant reflection -->
+  <ellipse cx="440" cy="420" rx="50" ry="80" fill="url(#glassHighlight)" transform="rotate(-20, 440, 420)"/>
+
+  <!-- Small highlight dot -->
+  <circle cx="420" cy="380" r="12" fill="#FFFFFF" opacity="0.6"/>
+
+  <!-- Subtle inner ring detail on droplet -->
+  <path d="M512 320
+           C512 320, 400 460, 400 580
+           C400 670, 448 740, 512 740
+           C576 740, 624 670, 624 580
+           C624 460, 512 320, 512 320 Z"
+        fill="none" stroke="#FFFCF5" stroke-width="1" opacity="0.15"/>
+
+  <!-- Decorative dots - apothecary style -->
+  <circle cx="512" cy="140" r="6" fill="#D4A855" opacity="0.6"/>
+  <circle cx="512" cy="884" r="6" fill="#D4A855" opacity="0.6"/>
+  <circle cx="140" cy="512" r="6" fill="#D4A855" opacity="0.4"/>
+  <circle cx="884" cy="512" r="6" fill="#D4A855" opacity="0.4"/>
+
+  <!-- Small decorative elements around the droplet -->
+  <circle cx="300" cy="400" r="3" fill="#D4A855" opacity="0.3"/>
+  <circle cx="724" cy="400" r="3" fill="#D4A855" opacity="0.3"/>
+  <circle cx="280" cy="620" r="2" fill="#D4A855" opacity="0.25"/>
+  <circle cx="744" cy="620" r="2" fill="#D4A855" opacity="0.25"/>
+</svg>

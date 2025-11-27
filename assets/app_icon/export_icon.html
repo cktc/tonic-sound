@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tonic Sound App Icon Export</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #1a1a1a;
+      color: #f0f0f0;
+      min-height: 100vh;
+      padding: 40px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+      color: #D4A855;
+    }
+    .subtitle {
+      text-align: center;
+      color: #888;
+      margin-bottom: 40px;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+    }
+    .preview-container {
+      display: flex;
+      gap: 40px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .preview {
+      text-align: center;
+    }
+    .preview-label {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #888;
+    }
+    .icon-preview {
+      border: 1px solid #333;
+      border-radius: 20%;
+      overflow: hidden;
+    }
+    .icon-preview.large { width: 256px; height: 256px; }
+    .icon-preview.medium { width: 120px; height: 120px; }
+    .icon-preview.small { width: 60px; height: 60px; }
+    canvas {
+      display: none;
+    }
+    .export-section {
+      background: #252525;
+      padding: 30px;
+      border-radius: 16px;
+      text-align: center;
+      max-width: 600px;
+    }
+    .export-section h2 {
+      margin-bottom: 15px;
+      color: #D4A855;
+    }
+    .export-section p {
+      color: #aaa;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    button {
+      background: #D4A855;
+      color: #0F0D0B;
+      border: none;
+      padding: 14px 28px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover {
+      background: #E8C77B;
+      transform: translateY(-2px);
+    }
+    .instructions {
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 20px;
+      text-align: left;
+    }
+    .instructions code {
+      background: #333;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'SF Mono', Monaco, monospace;
+    }
+    .instructions ol {
+      margin-left: 20px;
+      line-height: 2;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tonic Sound App Icon</h1>
+  <p class="subtitle">Victorian Apothecary Aesthetic</p>
+
+  <div class="container">
+    <div class="preview-container">
+      <div class="preview">
+        <div class="icon-preview large" id="preview-large"></div>
+        <div class="preview-label">App Store (1024px)</div>
+      </div>
+      <div class="preview">
+        <div class="icon-preview medium" id="preview-medium"></div>
+        <div class="preview-label">Home Screen (120px)</div>
+      </div>
+      <div class="preview">
+        <div class="icon-preview small" id="preview-small"></div>
+        <div class="preview-label">Spotlight (60px)</div>
+      </div>
+    </div>
+
+    <div class="export-section">
+      <h2>Export to PNG</h2>
+      <p>Click the button below to download the icon as a 1024x1024 PNG file ready for App Store submission.</p>
+      <button onclick="exportPNG()">Download 1024x1024 PNG</button>
+
+      <div class="instructions">
+        <p><strong>After downloading:</strong></p>
+        <ol>
+          <li>Save the PNG to <code>assets/app_icon/tonic_icon_1024.png</code></li>
+          <li>Run <code>flutter pub get</code></li>
+          <li>Run <code>dart run flutter_launcher_icons</code></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="canvas" width="1024" height="1024"></canvas>
+
+  <script>
+    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="bgGradient" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#1C1816"/>
+      <stop offset="60%" stop-color="#0F0D0B"/>
+      <stop offset="100%" stop-color="#0A0908"/>
+    </radialGradient>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E8C77B"/>
+      <stop offset="40%" stop-color="#D4A855"/>
+      <stop offset="100%" stop-color="#9A7830"/>
+    </linearGradient>
+    <radialGradient id="innerGlow" cx="50%" cy="35%" r="50%">
+      <stop offset="0%" stop-color="#FFFCF5" stop-opacity="0.9"/>
+      <stop offset="30%" stop-color="#E8C77B" stop-opacity="0.6"/>
+      <stop offset="70%" stop-color="#D4A855" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#D4A855" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="dropletGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="20" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <radialGradient id="ambientGlow" cx="50%" cy="45%" r="40%">
+      <stop offset="0%" stop-color="#D4A855" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#D4A855" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="glassHighlight" x1="30%" y1="0%" x2="70%" y2="50%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B7340"/>
+      <stop offset="50%" stop-color="#D4A855"/>
+      <stop offset="100%" stop-color="#8B7340"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bgGradient)"/>
+  <ellipse cx="512" cy="520" rx="280" ry="300" fill="url(#ambientGlow)"/>
+  <circle cx="512" cy="512" r="420" fill="none" stroke="url(#ringGradient)" stroke-width="1.5" opacity="0.3"/>
+  <circle cx="512" cy="512" r="380" fill="none" stroke="#3D352E" stroke-width="1" opacity="0.5"/>
+  <path d="M180 180 L180 220 M180 180 L220 180" stroke="#D4A855" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
+  <path d="M844 180 L844 220 M844 180 L804 180" stroke="#D4A855" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
+  <path d="M180 844 L180 804 M180 844 L220 844" stroke="#D4A855" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
+  <path d="M844 844 L844 804 M844 844 L804 844" stroke="#D4A855" stroke-width="2" opacity="0.4" stroke-linecap="round"/>
+  <g filter="url(#dropletGlow)">
+    <path d="M512 220 C512 220, 340 420, 340 580 C340 700, 410 800, 512 800 C614 800, 684 700, 684 580 C684 420, 512 220, 512 220 Z" fill="#9A7830" opacity="0.3" transform="translate(8, 8)"/>
+    <path d="M512 220 C512 220, 340 420, 340 580 C340 700, 410 800, 512 800 C614 800, 684 700, 684 580 C684 420, 512 220, 512 220 Z" fill="url(#goldGradient)"/>
+    <path d="M512 280 C512 280, 380 440, 380 570 C380 670, 435 750, 512 750 C589 750, 644 670, 644 570 C644 440, 512 280, 512 280 Z" fill="url(#innerGlow)"/>
+  </g>
+  <ellipse cx="440" cy="420" rx="50" ry="80" fill="url(#glassHighlight)" transform="rotate(-20, 440, 420)"/>
+  <circle cx="420" cy="380" r="12" fill="#FFFFFF" opacity="0.6"/>
+  <path d="M512 320 C512 320, 400 460, 400 580 C400 670, 448 740, 512 740 C576 740, 624 670, 624 580 C624 460, 512 320, 512 320 Z" fill="none" stroke="#FFFCF5" stroke-width="1" opacity="0.15"/>
+  <circle cx="512" cy="140" r="6" fill="#D4A855" opacity="0.6"/>
+  <circle cx="512" cy="884" r="6" fill="#D4A855" opacity="0.6"/>
+  <circle cx="140" cy="512" r="6" fill="#D4A855" opacity="0.4"/>
+  <circle cx="884" cy="512" r="6" fill="#D4A855" opacity="0.4"/>
+  <circle cx="300" cy="400" r="3" fill="#D4A855" opacity="0.3"/>
+  <circle cx="724" cy="400" r="3" fill="#D4A855" opacity="0.3"/>
+  <circle cx="280" cy="620" r="2" fill="#D4A855" opacity="0.25"/>
+  <circle cx="744" cy="620" r="2" fill="#D4A855" opacity="0.25"/>
+</svg>`;
+
+    function loadSVG() {
+      const blob = new Blob([svgContent], {type: 'image/svg+xml'});
+      const url = URL.createObjectURL(blob);
+
+      // Load previews
+      ['large', 'medium', 'small'].forEach(size => {
+        const container = document.getElementById(`preview-${size}`);
+        const img = document.createElement('img');
+        img.src = url;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        container.appendChild(img);
+      });
+    }
+
+    function exportPNG() {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      const blob = new Blob([svgContent], {type: 'image/svg+xml'});
+      const url = URL.createObjectURL(blob);
+
+      img.onload = function() {
+        ctx.drawImage(img, 0, 0, 1024, 1024);
+
+        canvas.toBlob(function(blob) {
+          const link = document.createElement('a');
+          link.download = 'tonic_icon_1024.png';
+          link.href = URL.createObjectURL(blob);
+          link.click();
+          URL.revokeObjectURL(link.href);
+        }, 'image/png');
+
+        URL.revokeObjectURL(url);
+      };
+
+      img.src = url;
+    }
+
+    loadSVG();
+  </script>
+</body>
+</html>

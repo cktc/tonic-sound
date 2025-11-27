@@ -88,10 +88,9 @@ class PlaybackProvider extends ChangeNotifier {
     final clampedValue = value.clamp(0.0, 1.0);
     _strength = clampedValue;
 
-    // Update audio service if currently playing
-    if (isPlaying) {
-      _audioService.setStrength(clampedValue);
-    }
+    // Always update audio service to keep state in sync
+    // Audio service will apply volume change on next buffer generation if playing
+    _audioService.setStrength(clampedValue);
 
     notifyListeners();
   }

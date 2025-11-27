@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../shared/constants/enums.dart';
 import '../../../shared/constants/test_keys.dart';
 import '../../../shared/theme/tonic_colors.dart';
 
-/// Dosage selector with preset duration options.
+/// Elegant dosage selector with refined pill buttons.
 /// Uses apothecary terminology (dosage = session duration).
 class DosageSelector extends StatelessWidget {
   const DosageSelector({
@@ -13,13 +14,8 @@ class DosageSelector extends StatelessWidget {
     this.enabled = true,
   });
 
-  /// Currently selected dosage in minutes
   final int selectedMinutes;
-
-  /// Callback when dosage changes
   final ValueChanged<int> onChanged;
-
-  /// Whether the selector is enabled
   final bool enabled;
 
   @override
@@ -27,21 +23,24 @@ class DosageSelector extends StatelessWidget {
     return Column(
       key: TonicTestKeys.counterDosageSelector,
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Label
+        // Simple label
         Text(
           'DOSAGE',
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: TonicColors.textSecondary,
-                letterSpacing: 1.5,
-              ),
+          style: GoogleFonts.sourceSans3(
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 2.0,
+            color: TonicColors.textMuted,
+          ),
         ),
         const SizedBox(height: 12),
-        // Dosage options
+        // Dosage options in a centered layout
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: 10,
+          runSpacing: 10,
+          alignment: WrapAlignment.center,
           children: DosageDuration.values.map((duration) {
             final isSelected = duration.minutes == selectedMinutes;
             return _DosageChip(
@@ -76,25 +75,39 @@ class _DosageChip extends StatelessWidget {
       onTap: enabled ? onTap : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? TonicColors.accent : TonicColors.surface,
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected
+              ? TonicColors.accent
+              : TonicColors.surface,
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isSelected
-                ? TonicColors.accent
-                : (enabled ? TonicColors.surfaceLight : TonicColors.surface),
+                ? TonicColors.accentLight
+                : TonicColors.border,
             width: 1,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: TonicColors.accent.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    spreadRadius: 0,
+                  ),
+                ]
+              : null,
         ),
         child: Text(
           label,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: isSelected
-                    ? TonicColors.base
-                    : (enabled ? TonicColors.textPrimary : TonicColors.textMuted),
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              ),
+          style: GoogleFonts.sourceSans3(
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            letterSpacing: 0.5,
+            color: isSelected
+                ? TonicColors.base
+                : (enabled ? TonicColors.textPrimary : TonicColors.textMuted),
+          ),
         ),
       ),
     );

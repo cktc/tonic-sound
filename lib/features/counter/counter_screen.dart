@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../shared/constants/enums.dart';
 import '../../shared/constants/test_keys.dart';
 import '../../shared/theme/tonic_colors.dart';
 import 'counter_provider.dart';
-import 'widgets/dosage_selector.dart';
-import 'widgets/safety_indicator.dart';
 import 'widgets/strength_slider.dart';
 import 'widgets/timer_display.dart';
 import 'widgets/tonic_bottle.dart';
 
 /// Main Counter screen - the primary interface for playing tonics.
-/// Displays the selected tonic bottle with tap-to-dispense functionality,
-/// along with strength and dosage controls.
+/// Features elegant Victorian apothecary design with the tonic bottle,
+/// strength controls, and dosage selection.
 class CounterScreen extends StatelessWidget {
   const CounterScreen({super.key});
 
@@ -21,76 +20,54 @@ class CounterScreen extends StatelessWidget {
     return Scaffold(
       key: TonicTestKeys.counterScreen,
       backgroundColor: TonicColors.base,
-      appBar: AppBar(
-        backgroundColor: TonicColors.base,
-        elevation: 0,
-        title: Text(
-          'Tonic',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        centerTitle: true,
-      ),
       body: Consumer<PlaybackProvider>(
         builder: (context, playback, child) {
           return SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 8),
-                  // Timer display
+                  const SizedBox(height: 24),
+                  // Clean header - just tonic name
+                  _buildHeader(context, playback),
+                  const SizedBox(height: 32),
+                  // Timer display with integrated dosage selector
                   TimerDisplay(
                     remainingTime: playback.isIdle
                         ? _formatDuration(playback.dosageMinutes)
                         : playback.remainingTimeFormatted,
                     progress: playback.progress,
                     isActive: playback.isPlaying || playback.isPaused,
+                    selectedMinutes: playback.dosageMinutes,
+                    onDosageChanged: (minutes) => playback.setDosage(minutes),
+                    enabled: playback.isIdle,
                   ),
-                  const SizedBox(height: 16),
-                  // Tonic bottle
+                  const SizedBox(height: 32),
+                  // Tonic bottle - the sole control
+                  // Tap to play/pause, long-press to stop
                   TonicBottle(
                     tonic: playback.selectedTonic,
                     isDispensing: playback.isPlaying,
+                    isPaused: playback.isPaused,
+                    progress: playback.progress,
                     onTap: () => _handleBottleTap(context, playback),
+                    onLongPress: (playback.isPlaying || playback.isPaused)
+                        ? () => playback.cap()
+                        : null,
                   ),
-                  const SizedBox(height: 16),
-                  // Safety indicator
-                  SafetyIndicator(
-                    safetyLevel: playback.safetyLevel,
-                  ),
-                  const SizedBox(height: 16),
-                  // Strength slider
+                  const SizedBox(height: 32),
+                  // Strength slider - minimal
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: StrengthSlider(
                       value: playback.strength,
                       onChanged: (value) => playback.setStrength(value),
                       enabled: true,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  // Dosage selector
-                  DosageSelector(
-                    selectedMinutes: playback.dosageMinutes,
-                    onChanged: (minutes) => playback.setDosage(minutes),
-                    enabled: playback.isIdle,
-                  ),
-                  const SizedBox(height: 16),
-                  // Playback controls (when active)
-                  if (playback.isPlaying || playback.isPaused)
-                    _buildPlaybackControls(context, playback),
-                  // Status text
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Text(
-                      _getStatusText(playback),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: TonicColors.textSecondary,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  // Warning dialog trigger for high volume
+                  const SizedBox(height: 24),
+                  // Warning only for high volume
                   if (playback.safetyLevel == SafetyLevel.high && !playback.isPlaying)
                     _buildVolumeWarning(context),
                   const SizedBox(height: 32),
@@ -103,29 +80,32 @@ class CounterScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildHeader(BuildContext context, PlaybackProvider playback) {
+    // Clean, minimal header - just the tonic name as the hero
+    return Text(
+      playback.selectedTonic.name,
+      style: GoogleFonts.cormorantGaramond(
+        fontSize: 32,
+        fontWeight: FontWeight.w500,
+        color: TonicColors.textPrimary,
+        letterSpacing: 2.0,
+      ),
+    );
+  }
+
   String _formatDuration(int minutes) {
     return '${minutes.toString().padLeft(2, '0')}:00';
   }
 
-  String _getStatusText(PlaybackProvider playback) {
-    if (playback.isPlaying) {
-      return 'Your ${playback.selectedTonic.name} tonic is dispensing. '
-          'Tap the bottle to cap it.';
-    } else if (playback.isPaused) {
-      return 'Playback paused. Tap play to resume.';
-    } else {
-      return 'Tap the bottle to begin your ${playback.selectedTonic.name} '
-          'sound therapy session.';
-    }
-  }
-
   void _handleBottleTap(BuildContext context, PlaybackProvider playback) {
     if (playback.isPlaying) {
-      playback.cap();
+      // Tap while playing = pause
+      playback.pause();
     } else if (playback.isPaused) {
+      // Tap while paused = resume
       playback.resume();
     } else {
-      // Check for high volume warning before dispensing
+      // Tap while idle = dispense (with volume warning check)
       if (playback.safetyLevel == SafetyLevel.high) {
         _showVolumeWarningDialog(context, playback);
       } else {
@@ -137,43 +117,149 @@ class CounterScreen extends StatelessWidget {
   void _showVolumeWarningDialog(BuildContext context, PlaybackProvider playback) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: TonicColors.surface,
-        title: Row(
-          children: [
-            const Icon(Icons.warning, color: TonicColors.warning),
-            const SizedBox(width: 8),
-            Text(
-              'High Volume',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: TonicColors.textPrimary,
-                  ),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                TonicColors.surfaceLight,
+                TonicColors.surface,
+              ],
             ),
-          ],
-        ),
-        content: Text(
-          'You\'ve selected a high strength level. Extended listening at this '
-          'volume may cause hearing fatigue. Are you sure you want to continue?',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: TonicColors.textSecondary,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: TonicColors.warning.withValues(alpha: 0.4),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
               ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Warning icon
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: TonicColors.warning.withValues(alpha: 0.15),
+                  border: Border.all(
+                    color: TonicColors.warning.withValues(alpha: 0.4),
+                    width: 1.5,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.volume_up_rounded,
+                  size: 28,
+                  color: TonicColors.warning,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Title
+              Text(
+                'High Volume',
+                style: GoogleFonts.cormorantGaramond(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                  color: TonicColors.textPrimary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Message
+              Text(
+                'You\'ve selected a high strength level. Extended listening at this volume may cause hearing fatigue. Are you sure you want to continue?',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.sourceSans3(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: TonicColors.textSecondary,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          color: TonicColors.surfaceLight,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: TonicColors.border,
+                            width: 1,
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Cancel',
+                            style: GoogleFonts.sourceSans3(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: TonicColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        playback.dispense();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              TonicColors.warning,
+                              TonicColors.warning.withValues(alpha: 0.9),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: TonicColors.warning.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Continue',
+                            style: GoogleFonts.sourceSans3(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: TonicColors.base,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              playback.dispense();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: TonicColors.warning,
-            ),
-            child: const Text('Continue'),
-          ),
-        ],
       ),
     );
   }
@@ -182,28 +268,45 @@ class CounterScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: TonicColors.warning.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: [
+              TonicColors.warning.withValues(alpha: 0.12),
+              TonicColors.warning.withValues(alpha: 0.06),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: TonicColors.warning.withValues(alpha: 0.3),
+            width: 1,
           ),
         ),
         child: Row(
           children: [
-            const Icon(
-              Icons.warning_amber,
-              color: TonicColors.warning,
-              size: 20,
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: TonicColors.warning.withValues(alpha: 0.2),
+              ),
+              child: const Icon(
+                Icons.warning_amber_rounded,
+                color: TonicColors.warning,
+                size: 18,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 'High volume selected. Consider lowering for longer sessions.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: TonicColors.warning,
-                    ),
+                style: GoogleFonts.sourceSans3(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: TonicColors.warning,
+                  height: 1.3,
+                ),
               ),
             ),
           ],
@@ -212,40 +315,4 @@ class CounterScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPlaybackControls(
-    BuildContext context,
-    PlaybackProvider playback,
-  ) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Play/Pause button
-        IconButton(
-          icon: Icon(
-            playback.isPlaying ? Icons.pause_circle : Icons.play_circle,
-            size: 56,
-            color: TonicColors.accent,
-          ),
-          onPressed: () {
-            if (playback.isPlaying) {
-              playback.pause();
-            } else {
-              playback.resume();
-            }
-          },
-        ),
-        const SizedBox(width: 24),
-        // Stop button
-        IconButton(
-          key: TonicTestKeys.counterCapButton,
-          icon: const Icon(
-            Icons.stop_circle,
-            size: 56,
-            color: TonicColors.textSecondary,
-          ),
-          onPressed: () => playback.cap(),
-        ),
-      ],
-    );
-  }
 }
