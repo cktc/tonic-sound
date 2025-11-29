@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:haptic_feedback/haptic_feedback.dart';
 import 'package:provider/provider.dart';
 import '../../shared/constants/enums.dart';
 import '../../shared/constants/test_keys.dart';
@@ -360,6 +361,7 @@ class _DispensaryScreenContent extends StatelessWidget {
               width: double.infinity,
               child: GestureDetector(
                 onTap: () {
+                  Haptics.vibrate(HapticsType.success);
                   if (tonic != null) {
                     playback.selectTonic(tonic);
                   } else if (botanical != null) {
@@ -427,7 +429,10 @@ class _TabButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        Haptics.vibrate(HapticsType.selection);
+        onTap();
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOut,
