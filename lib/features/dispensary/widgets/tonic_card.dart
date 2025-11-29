@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_vibrate/flutter_vibrate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:haptic_feedback/haptic_feedback.dart';
 import '../../../shared/constants/test_keys.dart';
 import '../../../shared/constants/tonic_catalog.dart';
 import '../../../shared/theme/tonic_colors.dart';
@@ -24,7 +24,7 @@ class TonicCard extends StatelessWidget {
     return GestureDetector(
       key: TonicTestKeys.dispensaryTonicCard,
       onTap: () {
-        Vibrate.feedback(FeedbackType.selection);
+        Haptics.vibrate(HapticsType.selection);
         onTap();
       },
       child: AnimatedContainer(

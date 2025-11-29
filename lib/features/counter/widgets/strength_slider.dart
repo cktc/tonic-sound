@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_vibrate/flutter_vibrate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:haptic_feedback/haptic_feedback.dart';
 import '../../../shared/constants/test_keys.dart';
 import '../../../shared/theme/tonic_colors.dart';
 
@@ -50,7 +50,7 @@ class _StrengthSliderState extends State<StrengthSlider> {
               final tapX = details.localPosition.dx;
               if ((tapX - thumbX).abs() < 24) {
                 // Tapped on thumb - reset to recommended
-                Vibrate.feedback(FeedbackType.medium);
+                Haptics.vibrate(HapticsType.medium);
                 widget.onChanged(_recommendedStrength);
               }
             }
@@ -64,7 +64,7 @@ class _StrengthSliderState extends State<StrengthSlider> {
             } : null,
             onChangeStart: (_) {
               _isDragging = false;
-              Vibrate.feedback(FeedbackType.light);
+              Haptics.vibrate(HapticsType.light);
             },
             onChangeEnd: (_) {
               _isDragging = false;

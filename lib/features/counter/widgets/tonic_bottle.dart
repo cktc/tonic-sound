@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_vibrate/flutter_vibrate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:haptic_feedback/haptic_feedback.dart';
 import '../../../shared/constants/test_keys.dart';
 import '../../../shared/constants/tonic_catalog.dart';
 import '../../../shared/theme/tonic_colors.dart';
@@ -103,12 +103,12 @@ class _TonicBottleState extends State<TonicBottle>
         GestureDetector(
           key: TonicTestKeys.counterTonicBottle,
           onTap: () {
-            Vibrate.feedback(FeedbackType.medium);
+            Haptics.vibrate(HapticsType.medium);
             widget.onTap();
           },
           onLongPress: widget.onLongPress != null
               ? () {
-                  Vibrate.feedback(FeedbackType.heavy);
+                  Haptics.vibrate(HapticsType.heavy);
                   widget.onLongPress!();
                 }
               : null,
