@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../shared/constants/test_keys.dart';
 import '../../../shared/constants/tonic_catalog.dart';
@@ -22,7 +23,10 @@ class TonicCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       key: TonicTestKeys.dispensaryTonicCard,
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOut,

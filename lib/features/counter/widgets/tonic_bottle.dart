@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../shared/constants/test_keys.dart';
 import '../../../shared/constants/tonic_catalog.dart';
@@ -101,8 +102,16 @@ class _TonicBottleState extends State<TonicBottle>
         // The bottle itself
         GestureDetector(
           key: TonicTestKeys.counterTonicBottle,
-          onTap: widget.onTap,
-          onLongPress: widget.onLongPress,
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            widget.onTap();
+          },
+          onLongPress: widget.onLongPress != null
+              ? () {
+                  HapticFeedback.heavyImpact();
+                  widget.onLongPress!();
+                }
+              : null,
           child: AnimatedBuilder(
             animation: _glowAnimation,
             builder: (context, child) {
