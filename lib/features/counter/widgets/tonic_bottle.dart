@@ -4,26 +4,41 @@ import '../../../shared/constants/test_keys.dart';
 import '../../../shared/constants/tonic_catalog.dart';
 import '../../../shared/theme/tonic_colors.dart';
 
-/// Elegant apothecary-style tonic bottle widget.
+/// Elegant apothecary-style bottle widget for both Tonics and Botanicals.
 /// Features glass-like effects and progress border when dispensing.
 /// The bottle is the sole control - tap to play/pause, long-press to stop.
 class TonicBottle extends StatefulWidget {
   const TonicBottle({
     super.key,
-    required this.tonic,
+    this.tonic,
+    this.botanical,
     required this.isDispensing,
     required this.onTap,
     this.isPaused = false,
     this.onLongPress,
     this.progress = 0.0,
-  });
+  }) : assert(tonic != null || botanical != null,
+            'Either tonic or botanical must be provided');
 
-  final Tonic tonic;
+  final Tonic? tonic;
+  final Botanical? botanical;
   final bool isDispensing;
   final bool isPaused;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
   final double progress;
+
+  /// Get the display name
+  String get name => tonic?.name ?? botanical?.name ?? '';
+
+  /// Get the tagline
+  String get tagline => tonic?.tagline ?? botanical?.tagline ?? '';
+
+  /// Get the color
+  Color get color => tonic?.color ?? botanical?.color ?? TonicColors.accent;
+
+  /// Whether this is a botanical
+  bool get isBotanical => botanical != null;
 
   @override
   State<TonicBottle> createState() => _TonicBottleState();
@@ -99,7 +114,7 @@ class _TonicBottleState extends State<TonicBottle>
                   boxShadow: widget.isDispensing
                       ? [
                           BoxShadow(
-                            color: widget.tonic.color
+                            color: widget.color
                                 .withValues(alpha: _glowAnimation.value * 0.5),
                             blurRadius: 20,
                             spreadRadius: 2,
@@ -127,7 +142,7 @@ class _TonicBottleState extends State<TonicBottle>
                             return CustomPaint(
                               painter: _AlchemicalSparkPainter(
                                 progress: value,
-                                color: widget.tonic.color,
+                                color: widget.color,
                                 borderRadius: 24,
                                 strokeWidth: 3,
                                 sparkIntensity: _sparkAnimation.value,
@@ -178,7 +193,7 @@ class _TonicBottleState extends State<TonicBottle>
               ),
               border: Border.all(
                 color: widget.isDispensing
-                    ? widget.tonic.color.withValues(alpha: 0.2)
+                    ? widget.color.withValues(alpha: 0.2)
                     : TonicColors.border,
                 width: 1,
               ),
@@ -234,17 +249,17 @@ class _TonicBottleState extends State<TonicBottle>
         shape: BoxShape.circle,
         gradient: RadialGradient(
           colors: [
-            widget.tonic.color.withValues(alpha: 0.3),
-            widget.tonic.color.withValues(alpha: 0.1),
+            widget.color.withValues(alpha: 0.3),
+            widget.color.withValues(alpha: 0.1),
           ],
         ),
         border: Border.all(
-          color: widget.tonic.color.withValues(alpha: 0.4),
+          color: widget.color.withValues(alpha: 0.4),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: widget.tonic.color.withValues(alpha: 0.2),
+            color: widget.color.withValues(alpha: 0.2),
             blurRadius: 15,
             spreadRadius: 0,
           ),
@@ -254,19 +269,40 @@ class _TonicBottleState extends State<TonicBottle>
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: Icon(
-            widget.isDispensing ? Icons.waves_rounded : Icons.water_drop_rounded,
-            key: ValueKey(widget.isDispensing),
+            _getBottleIcon(),
+            key: ValueKey('${widget.isDispensing}_${widget.isBotanical}'),
             size: 40,
-            color: widget.tonic.color,
+            color: widget.color,
           ),
         ),
       ),
     );
   }
 
+  IconData _getBottleIcon() {
+    if (widget.isDispensing) {
+      return Icons.waves_rounded;
+    }
+    if (widget.isBotanical) {
+      // Use nature-themed icons for botanicals
+      final id = widget.botanical?.id ?? '';
+      switch (id) {
+        case 'rain':
+          return Icons.water_drop_rounded;
+        case 'ocean':
+          return Icons.waves_rounded;
+        case 'wind':
+          return Icons.air_rounded;
+        default:
+          return Icons.eco_rounded;
+      }
+    }
+    return Icons.water_drop_rounded;
+  }
+
   Widget _buildLabel() {
     return Text(
-      widget.tonic.tagline,
+      widget.tagline,
       textAlign: TextAlign.center,
       style: GoogleFonts.sourceSans3(
         fontSize: 13,

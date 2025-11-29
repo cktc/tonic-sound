@@ -4,8 +4,11 @@ import '../../shared/constants/tonic_catalog.dart';
 
 /// Provider for Dispensary screen state.
 class DispensaryProvider extends ChangeNotifier {
+  DispensaryProvider({int initialTabIndex = 0})
+      : _selectedTabIndex = initialTabIndex;
+
   /// Current tab: tonics or botanicals
-  int _selectedTabIndex = 0;
+  int _selectedTabIndex;
   int get selectedTabIndex => _selectedTabIndex;
 
   /// Currently highlighted tonic (for preview, not selection)

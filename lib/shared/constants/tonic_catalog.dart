@@ -119,14 +119,14 @@ class Botanical {
       imagePath: 'assets/images/botanicals/ocean.png',
     ),
     Botanical(
-      id: 'forest',
-      name: 'Forest',
-      tagline: 'Woodland Ambience',
+      id: 'wind',
+      name: 'Wind',
+      tagline: 'Gentle Breeze',
       description:
-          'Birds singing among rustling leaves in a peaceful forest. Nature\'s own prescription for calm.',
-      botanicalType: BotanicalType.forest,
-      color: TonicColors.forestBotanical,
-      imagePath: 'assets/images/botanicals/forest.png',
+          'The soft whisper of wind through open spaces. A calming presence that carries your thoughts away.',
+      botanicalType: BotanicalType.wind,
+      color: TonicColors.windBotanical,
+      imagePath: 'assets/images/botanicals/wind.png',
     ),
   ];
 

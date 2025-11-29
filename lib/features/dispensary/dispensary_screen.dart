@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../shared/constants/enums.dart';
 import '../../shared/constants/test_keys.dart';
 import '../../shared/constants/tonic_catalog.dart';
 import '../../shared/navigation/app_router.dart';
@@ -17,8 +18,12 @@ class DispensaryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get current sound type to set initial tab
+    final playback = context.read<PlaybackProvider>();
+    final initialTab = playback.soundType == SoundType.botanical ? 1 : 0;
+
     return ChangeNotifierProvider(
-      create: (_) => DispensaryProvider(),
+      create: (_) => DispensaryProvider(initialTabIndex: initialTab),
       child: const _DispensaryScreenContent(),
     );
   }
@@ -173,11 +178,16 @@ class _DispensaryScreenContent extends StatelessWidget {
       itemCount: tonics.length,
       itemBuilder: (context, index) {
         final tonic = tonics[index];
+        // Show as selected if highlighted OR if it's the current selection in playback
         final isHighlighted = dispensary.highlightedTonic?.id == tonic.id;
+        final isCurrentSelection = playback.soundType == SoundType.tonic &&
+            playback.selectedTonic.id == tonic.id &&
+            dispensary.highlightedTonic == null &&
+            dispensary.highlightedBotanical == null;
 
         return TonicCard(
           tonic: tonic,
-          isSelected: isHighlighted,
+          isSelected: isHighlighted || isCurrentSelection,
           onTap: () {
             dispensary.highlightTonic(tonic);
           },
@@ -202,11 +212,16 @@ class _DispensaryScreenContent extends StatelessWidget {
       itemCount: botanicals.length,
       itemBuilder: (context, index) {
         final botanical = botanicals[index];
+        // Show as selected if highlighted OR if it's the current selection in playback
         final isHighlighted = dispensary.highlightedBotanical?.id == botanical.id;
+        final isCurrentSelection = playback.soundType == SoundType.botanical &&
+            playback.selectedBotanical?.id == botanical.id &&
+            dispensary.highlightedTonic == null &&
+            dispensary.highlightedBotanical == null;
 
         return BotanicalCard(
           botanical: botanical,
-          isSelected: isHighlighted,
+          isSelected: isHighlighted || isCurrentSelection,
           onTap: () {
             dispensary.highlightBotanical(botanical);
           },

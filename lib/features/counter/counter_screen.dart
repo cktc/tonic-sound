@@ -44,10 +44,15 @@ class CounterScreen extends StatelessWidget {
                     enabled: playback.isIdle,
                   ),
                   const SizedBox(height: 32),
-                  // Tonic bottle - the sole control
+                  // Bottle - the sole control
                   // Tap to play/pause, long-press to stop
                   TonicBottle(
-                    tonic: playback.selectedTonic,
+                    tonic: playback.soundType == SoundType.tonic
+                        ? playback.selectedTonic
+                        : null,
+                    botanical: playback.soundType == SoundType.botanical
+                        ? playback.selectedBotanical
+                        : null,
                     isDispensing: playback.isPlaying,
                     isPaused: playback.isPaused,
                     progress: playback.progress,
@@ -81,9 +86,13 @@ class CounterScreen extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context, PlaybackProvider playback) {
-    // Clean, minimal header - just the tonic name as the hero
+    // Clean, minimal header - show tonic or botanical name
+    final name = playback.soundType == SoundType.botanical
+        ? playback.selectedBotanical?.name ?? ''
+        : playback.selectedTonic.name;
+
     return Text(
-      playback.selectedTonic.name,
+      name,
       style: GoogleFonts.cormorantGaramond(
         fontSize: 32,
         fontWeight: FontWeight.w500,

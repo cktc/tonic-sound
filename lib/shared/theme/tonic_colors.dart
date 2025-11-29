@@ -47,7 +47,7 @@ class TonicColors {
   // Botanical colors - nature-inspired
   static const rainBotanical = Color(0xFF7A9DAD);
   static const oceanBotanical = Color(0xFF3D7A8C);
-  static const forestBotanical = Color(0xFF5A7A5A);
+  static const windBotanical = Color(0xFF8A9CAD);
 
   // Decorative colors
   static const border = Color(0xFF3D352E);

@@ -207,11 +207,11 @@ class BotanicalCard extends StatelessWidget {
   IconData _getIconForBotanical(String id) {
     switch (id) {
       case 'rain':
-        return Icons.water_rounded;
+        return Icons.water_drop_rounded;
       case 'ocean':
         return Icons.waves_rounded;
-      case 'forest':
-        return Icons.forest_rounded;
+      case 'wind':
+        return Icons.air_rounded;
       default:
         return Icons.eco_rounded;
     }

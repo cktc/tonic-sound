@@ -27,9 +27,9 @@ enum BotanicalType {
   /// Best for: deep relaxation, meditation, sleep
   ocean,
 
-  /// Forest ambience with wind, birds, and rustling.
-  /// Best for: relaxation, nature connection, meditation
-  forest,
+  /// Wind ambience with gusts, base airflow, and whistling.
+  /// Best for: relaxation, focus, sleep, atmospheric ambience
+  wind,
 }
 
 /// Types of sounds available in the app.

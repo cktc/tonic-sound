@@ -11,7 +11,7 @@ import '../generators/pink_noise_generator.dart';
 import '../generators/brown_noise_generator.dart';
 import '../generators/rain_generator.dart';
 import '../generators/ocean_generator.dart';
-import '../generators/forest_generator.dart';
+import '../generators/wind_generator.dart';
 import 'audio_service.dart';
 import 'audio_service_handler.dart';
 import 'playback_state.dart';
@@ -311,8 +311,8 @@ class TonicAudioService implements TonicAudioServiceInterface {
         return RainGenerator();
       case BotanicalType.ocean:
         return OceanGenerator();
-      case BotanicalType.forest:
-        return ForestGenerator();
+      case BotanicalType.wind:
+        return WindGenerator();
     }
   }
 
