@@ -16,13 +16,29 @@ enum NoiseType {
   brown,
 }
 
+/// Types of algorithmically generated botanical sounds.
+/// Each type produces a distinct natural soundscape.
+enum BotanicalType {
+  /// Layered rain synthesis with droplets and filtered noise.
+  /// Best for: sleep, relaxation, focus
+  rain,
+
+  /// Ocean waves with rhythmic amplitude modulation.
+  /// Best for: deep relaxation, meditation, sleep
+  ocean,
+
+  /// Forest ambience with wind, birds, and rustling.
+  /// Best for: relaxation, nature connection, meditation
+  forest,
+}
+
 /// Types of sounds available in the app.
-/// Tonics are generated; Botanicals are pre-recorded.
+/// Both Tonics and Botanicals are algorithmically generated.
 enum SoundType {
   /// Real-time generated noise (white, pink, brown)
   tonic,
 
-  /// Pre-recorded ambient sounds (rain, ocean, forest)
+  /// Real-time generated ambient sounds (rain, ocean, forest)
   botanical,
 }
 

@@ -72,7 +72,7 @@ class Tonic {
 }
 
 /// Static catalog of available Botanicals.
-/// Botanicals are pre-recorded ambient sounds.
+/// Botanicals are algorithmically generated ambient sounds.
 /// Each Botanical provides natural soundscapes for relaxation.
 class Botanical {
   const Botanical({
@@ -80,18 +80,21 @@ class Botanical {
     required this.name,
     required this.tagline,
     required this.description,
+    required this.botanicalType,
     required this.color,
     required this.imagePath,
-    required this.audioPath,
   });
 
   final String id;
   final String name;
   final String tagline;
   final String description;
+  final BotanicalType botanicalType;
   final Color color;
   final String imagePath;
-  final String audioPath;
+
+  /// The default Botanical shown on first launch
+  static Botanical get defaultBotanical => catalog.first;
 
   /// All available Botanicals
   static const List<Botanical> catalog = [
@@ -101,9 +104,9 @@ class Botanical {
       tagline: 'Gentle Rainfall',
       description:
           'The soothing sound of steady rain against a windowpane. A timeless remedy for restless minds.',
+      botanicalType: BotanicalType.rain,
       color: TonicColors.rainBotanical,
       imagePath: 'assets/images/botanicals/rain.png',
-      audioPath: 'assets/audio/botanicals/rain.mp3',
     ),
     Botanical(
       id: 'ocean',
@@ -111,9 +114,9 @@ class Botanical {
       tagline: 'Coastal Waves',
       description:
           'Rhythmic ocean waves rolling onto a quiet shore. Let the tide wash away your worries.',
+      botanicalType: BotanicalType.ocean,
       color: TonicColors.oceanBotanical,
       imagePath: 'assets/images/botanicals/ocean.png',
-      audioPath: 'assets/audio/botanicals/ocean.mp3',
     ),
     Botanical(
       id: 'forest',
@@ -121,9 +124,9 @@ class Botanical {
       tagline: 'Woodland Ambience',
       description:
           'Birds singing among rustling leaves in a peaceful forest. Nature\'s own prescription for calm.',
+      botanicalType: BotanicalType.forest,
       color: TonicColors.forestBotanical,
       imagePath: 'assets/images/botanicals/forest.png',
-      audioPath: 'assets/audio/botanicals/forest.mp3',
     ),
   ];
 

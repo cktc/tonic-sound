@@ -9,6 +9,9 @@ import '../generators/noise_generator.dart';
 import '../generators/white_noise_generator.dart';
 import '../generators/pink_noise_generator.dart';
 import '../generators/brown_noise_generator.dart';
+import '../generators/rain_generator.dart';
+import '../generators/ocean_generator.dart';
+import '../generators/forest_generator.dart';
 import 'audio_service.dart';
 import 'audio_service_handler.dart';
 import 'playback_state.dart';
@@ -156,9 +159,17 @@ class TonicAudioService implements TonicAudioServiceInterface {
       throw StateError('TonicAudioService has been disposed');
     }
 
-    // TODO: Implement botanical playback using audio file
+    // Stop any current playback first
+    await _stopPlayback();
 
-    // Update state to show intent
+    // Initialize audio AFTER stopping (since _stopPlayback releases PCM)
+    await _initializeAudio();
+
+    // Create appropriate botanical generator
+    _currentGenerator = _createBotanicalGenerator(botanical.botanicalType);
+    _currentGenerator!.reset();
+
+    // Update state
     _sessionStartTime = DateTime.now();
     _updateState(_state.copyWith(
       status: PlaybackStatus.dispensing,
@@ -172,12 +183,17 @@ class TonicAudioService implements TonicAudioServiceInterface {
       clearTonic: true,
     ));
 
+    // Notify audio handler for lock screen controls
     audioHandler.onPlaybackStarted(
       title: botanical.name,
       subtitle: botanical.tagline,
       duration: Duration(minutes: dosageMinutes),
     );
 
+    // Start audio generation
+    await _startPcmFeed(strength);
+
+    // Start countdown timer
     _startCountdownTimer();
   }
 
@@ -223,8 +239,8 @@ class TonicAudioService implements TonicAudioServiceInterface {
     // Ensure audio is initialized (in case it was released during background)
     await _initializeAudio();
 
-    // Resume audio feed if tonic
-    if (_state.currentTonic != null && _currentGenerator != null) {
+    // Resume audio feed if tonic or botanical
+    if (_currentGenerator != null) {
       await _startPcmFeed(_state.strength);
     }
 
@@ -286,6 +302,17 @@ class TonicAudioService implements TonicAudioServiceInterface {
         return PinkNoiseGenerator();
       case NoiseType.brown:
         return BrownNoiseGenerator();
+    }
+  }
+
+  NoiseGenerator _createBotanicalGenerator(BotanicalType type) {
+    switch (type) {
+      case BotanicalType.rain:
+        return RainGenerator();
+      case BotanicalType.ocean:
+        return OceanGenerator();
+      case BotanicalType.forest:
+        return ForestGenerator();
     }
   }
 
