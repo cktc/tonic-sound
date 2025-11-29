@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_vibrate/flutter_vibrate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../shared/constants/test_keys.dart';
 import '../../../shared/constants/tonic_catalog.dart';
@@ -24,7 +24,7 @@ class BotanicalCard extends StatelessWidget {
     return GestureDetector(
       key: TonicTestKeys.dispensaryBotanicalCard,
       onTap: () {
-        HapticFeedback.selectionClick();
+        Vibrate.feedback(FeedbackType.selection);
         onTap();
       },
       child: AnimatedContainer(
