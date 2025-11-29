@@ -280,9 +280,6 @@ class _TonicBottleState extends State<TonicBottle>
   }
 
   IconData _getBottleIcon() {
-    if (widget.isDispensing) {
-      return Icons.waves_rounded;
-    }
     if (widget.isBotanical) {
       // Use nature-themed icons for botanicals
       final id = widget.botanical?.id ?? '';
@@ -297,6 +294,7 @@ class _TonicBottleState extends State<TonicBottle>
           return Icons.eco_rounded;
       }
     }
+    // Tonic icon (water drop for noise generators)
     return Icons.water_drop_rounded;
   }
 
