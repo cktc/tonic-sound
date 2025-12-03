@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/analytics/analytics_service.dart';
 import '../../../shared/constants/quiz_questions.dart';
 import '../../../shared/constants/test_keys.dart';
 import '../../../shared/theme/tonic_colors.dart';
@@ -33,6 +34,13 @@ class _QuizScreenState extends State<QuizScreen> {
   bool get _showingResults => _prescription != null;
 
   void _selectOption(int index) {
+    // Track question answered
+    AnalyticsService.instance.trackQuizQuestionAnswered(
+      questionNumber: _currentQuestionIndex + 1,
+      questionId: _currentQuestion.id,
+      selectedOptionIndex: index,
+    );
+
     setState(() {
       _responses[_currentQuestion.id] = index;
     });

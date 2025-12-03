@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:volume_controller/volume_controller.dart';
+import '../../core/analytics/analytics_service.dart';
 import '../../core/audio/services/tonic_audio_service.dart';
 import '../../core/audio/services/playback_state.dart';
 import '../../shared/constants/enums.dart';
@@ -20,9 +21,11 @@ class PlaybackProvider extends ChangeNotifier {
   }
 
   final TonicAudioService _audioService;
+  final AnalyticsService _analytics = AnalyticsService.instance;
   StreamSubscription<PlaybackState>? _subscription;
   StreamSubscription<double>? _volumeSubscription;
   bool _isUpdatingVolume = false;  // Prevent feedback loops
+  DateTime? _playbackStartTime;  // Track session start for elapsed time
 
   /// Current playback state
   PlaybackState get state => _audioService.currentState;
@@ -111,7 +114,17 @@ class PlaybackProvider extends ChangeNotifier {
 
   /// Set the dosage duration
   void setDosage(int minutes) {
+    final previousDosage = _dosageMinutes;
     _dosageMinutes = minutes;
+
+    // Track dosage change
+    if (previousDosage != minutes) {
+      _analytics.trackDosageChanged(
+        newDosageMinutes: minutes,
+        previousDosageMinutes: previousDosage,
+      );
+    }
+
     notifyListeners();
   }
 
@@ -148,8 +161,29 @@ class PlaybackProvider extends ChangeNotifier {
     });
   }
 
+  /// Get current sound ID for analytics
+  String get _currentSoundId => _soundType == SoundType.tonic
+      ? _selectedTonic.id
+      : _selectedBotanical?.id ?? '';
+
+  /// Get elapsed minutes since playback started
+  double get _elapsedMinutes {
+    if (_playbackStartTime == null) return 0;
+    return DateTime.now().difference(_playbackStartTime!).inSeconds / 60.0;
+  }
+
   /// Dispense the currently selected sound (start playback)
   Future<void> dispense() async {
+    _playbackStartTime = DateTime.now();
+
+    // Track playback started
+    _analytics.trackPlaybackStarted(
+      soundId: _currentSoundId,
+      soundType: _soundType,
+      dosageMinutes: _dosageMinutes,
+      strength: _strength,
+    );
+
     if (_soundType == SoundType.tonic) {
       await _audioService.dispenseTonic(
         _selectedTonic,
@@ -167,16 +201,38 @@ class PlaybackProvider extends ChangeNotifier {
 
   /// Cap the bottle (stop playback)
   Future<void> cap() async {
+    final elapsed = _elapsedMinutes;
+    final completedDosage = elapsed >= _dosageMinutes * 0.9; // 90% threshold
+
+    // Track playback stopped
+    _analytics.trackPlaybackStopped(
+      soundId: _currentSoundId,
+      soundType: _soundType,
+      elapsedMinutes: elapsed,
+      intendedDosageMinutes: _dosageMinutes,
+      completedDosage: completedDosage,
+      stopReason: 'manual',
+    );
+
+    _playbackStartTime = null;
     await _audioService.cap();
   }
 
   /// Pause playback
   Future<void> pause() async {
+    _analytics.trackPlaybackPaused(
+      soundId: _currentSoundId,
+      elapsedMinutes: _elapsedMinutes,
+    );
     await _audioService.pause();
   }
 
   /// Resume playback
   Future<void> resume() async {
+    _analytics.trackPlaybackResumed(
+      soundId: _currentSoundId,
+      elapsedMinutes: _elapsedMinutes,
+    );
     await _audioService.resume();
   }
 

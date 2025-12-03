@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../core/analytics/analytics_service.dart';
 import '../../shared/constants/test_keys.dart';
 import '../../shared/providers/preferences_provider.dart';
 import '../../shared/theme/tonic_colors.dart';
@@ -45,7 +46,19 @@ class SettingsScreen extends StatelessWidget {
                           'Retake Consultation',
                           'This will reset your quiz responses and show the onboarding flow again.',
                         );
+
+                        // Track settings action
+                        AnalyticsService.instance.trackSettingsAction(
+                          action: 'retake_consultation',
+                          confirmed: confirm == true,
+                        );
+
                         if (confirm == true) {
+                          // Track onboarding started again
+                          AnalyticsService.instance.trackOnboardingStarted(
+                            source: 'manual_retry',
+                          );
+
                           await onboarding.resetOnboarding();
                           if (context.mounted) {
                             Navigator.of(context).pushNamedAndRemoveUntil(
@@ -68,6 +81,13 @@ class SettingsScreen extends StatelessWidget {
                           'Reset All Data',
                           'This will delete all your preferences, quiz responses, and listening history. This cannot be undone.',
                         );
+
+                        // Track settings action
+                        AnalyticsService.instance.trackSettingsAction(
+                          action: 'reset_all_data',
+                          confirmed: confirm == true,
+                        );
+
                         if (confirm == true) {
                           await prefs.resetPreferences();
                           await onboarding.resetOnboarding();

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:haptic_feedback/haptic_feedback.dart';
+import 'package:provider/provider.dart';
+import '../../core/analytics/analytics_service.dart';
+import '../../features/counter/counter_provider.dart';
 import '../../features/counter/counter_screen.dart';
 import '../../features/dispensary/dispensary_screen.dart';
 import '../../features/settings/settings_screen.dart';
@@ -120,6 +123,16 @@ class _AppShellState extends State<AppShell> {
   }
 
   void _selectTab(int index) {
+    if (_currentIndex != index) {
+      // Track bottom navigation tap
+      final playback = context.read<PlaybackProvider>();
+      AnalyticsService.instance.trackBottomNavTapped(
+        fromTabIndex: _currentIndex,
+        toTabIndex: index,
+        wasPlaying: playback.isPlaying,
+      );
+    }
+
     setState(() {
       _currentIndex = index;
     });

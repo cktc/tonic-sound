@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:haptic_feedback/haptic_feedback.dart';
 import 'package:provider/provider.dart';
+import '../../core/analytics/analytics_service.dart';
 import '../../shared/constants/enums.dart';
 import '../../shared/constants/test_keys.dart';
 import '../../shared/constants/tonic_catalog.dart';
@@ -145,7 +146,15 @@ class _DispensaryScreenContent extends StatelessWidget {
                 label: 'Tonics',
                 subtitle: 'Generated',
                 isSelected: dispensary.selectedTabIndex == 0,
-                onTap: () => dispensary.selectTab(0),
+                onTap: () {
+                  if (dispensary.selectedTabIndex != 0) {
+                    AnalyticsService.instance.trackDispensaryTabSwitched(
+                      fromTabIndex: dispensary.selectedTabIndex,
+                      toTabIndex: 0,
+                    );
+                  }
+                  dispensary.selectTab(0);
+                },
               ),
             ),
             const SizedBox(width: 4),
@@ -154,7 +163,15 @@ class _DispensaryScreenContent extends StatelessWidget {
                 label: 'Botanicals',
                 subtitle: 'Nature',
                 isSelected: dispensary.selectedTabIndex == 1,
-                onTap: () => dispensary.selectTab(1),
+                onTap: () {
+                  if (dispensary.selectedTabIndex != 1) {
+                    AnalyticsService.instance.trackDispensaryTabSwitched(
+                      fromTabIndex: dispensary.selectedTabIndex,
+                      toTabIndex: 1,
+                    );
+                  }
+                  dispensary.selectTab(1);
+                },
               ),
             ),
           ],
@@ -190,6 +207,12 @@ class _DispensaryScreenContent extends StatelessWidget {
           tonic: tonic,
           isSelected: isHighlighted || isCurrentSelection,
           onTap: () {
+            // Track sound browsed
+            AnalyticsService.instance.trackSoundBrowsed(
+              soundId: tonic.id,
+              soundType: SoundType.tonic,
+              soundName: tonic.name,
+            );
             dispensary.highlightTonic(tonic);
           },
         );
@@ -224,6 +247,12 @@ class _DispensaryScreenContent extends StatelessWidget {
           botanical: botanical,
           isSelected: isHighlighted || isCurrentSelection,
           onTap: () {
+            // Track sound browsed
+            AnalyticsService.instance.trackSoundBrowsed(
+              soundId: botanical.id,
+              soundType: SoundType.botanical,
+              soundName: botanical.name,
+            );
             dispensary.highlightBotanical(botanical);
           },
         );
@@ -362,9 +391,29 @@ class _DispensaryScreenContent extends StatelessWidget {
               child: GestureDetector(
                 onTap: () {
                   Haptics.vibrate(HapticsType.success);
+
+                  // Get previous sound ID for tracking
+                  final previousSoundId = playback.soundType == SoundType.tonic
+                      ? playback.selectedTonic.id
+                      : playback.selectedBotanical?.id;
+
                   if (tonic != null) {
+                    // Track sound selected
+                    AnalyticsService.instance.trackSoundSelected(
+                      soundId: tonic.id,
+                      soundType: SoundType.tonic,
+                      soundName: tonic.name,
+                      previousSoundId: previousSoundId,
+                    );
                     playback.selectTonic(tonic);
                   } else if (botanical != null) {
+                    // Track sound selected
+                    AnalyticsService.instance.trackSoundSelected(
+                      soundId: botanical.id,
+                      soundType: SoundType.botanical,
+                      soundName: botanical.name,
+                      previousSoundId: previousSoundId,
+                    );
                     playback.selectBotanical(botanical);
                   }
                   dispensary.clearHighlight();

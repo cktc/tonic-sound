@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:audio_service/audio_service.dart';
 
+import 'core/analytics/analytics_service.dart';
 import 'core/storage/storage_service.dart';
 import 'core/audio/services/audio_service_handler.dart';
 import 'core/audio/services/tonic_audio_service.dart';
@@ -27,6 +28,9 @@ Future<void> main() async {
     // Initialize storage service
     final storageService = StorageService();
     await storageService.initialize();
+
+    // Initialize Mixpanel analytics
+    await AnalyticsService.instance.initialize();
 
     // Initialize audio service for background playback and lock screen controls
     audioHandler = await AudioService.init(
@@ -107,6 +111,7 @@ class TonicApp extends StatefulWidget {
 
 class _TonicAppState extends State<TonicApp> {
   bool? _showOnboarding; // null = loading, true = show onboarding, false = show app
+  bool _isFirstLaunch = false;
 
   @override
   void initState() {
@@ -120,8 +125,28 @@ class _TonicAppState extends State<TonicApp> {
   void _checkOnboardingStatus() {
     try {
       final preferencesProvider = context.read<PreferencesProvider>();
+      final onboardingComplete = preferencesProvider.onboardingComplete;
+      _isFirstLaunch = !onboardingComplete;
+
+      // Track app opened
+      AnalyticsService.instance.trackAppOpened(
+        version: '1.0.1',
+        isFirstLaunch: _isFirstLaunch,
+        onboardingComplete: onboardingComplete,
+      );
+
+      // Register super properties
+      AnalyticsService.instance.registerSuperProperties(
+        onboardingComplete: onboardingComplete,
+      );
+
+      // Track onboarding started if showing onboarding
+      if (!onboardingComplete) {
+        AnalyticsService.instance.trackOnboardingStarted();
+      }
+
       setState(() {
-        _showOnboarding = !preferencesProvider.onboardingComplete;
+        _showOnboarding = !onboardingComplete;
       });
     } catch (e) {
       debugPrint('[TonicApp] Error checking onboarding: $e');
