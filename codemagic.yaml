@@ -12,6 +12,10 @@ definitions:
     xcode: latest
     cocoapods: default
 
+  # Shared variables
+  shared_vars: &shared_vars
+    PROJECT_START_DATE: "2025-11-25T15:18:55Z"  # First commit date (ISO 8601)
+
   # Shared setup scripts
   setup_script: &setup_script
     name: Get Flutter dependencies
@@ -29,6 +33,17 @@ definitions:
     script: |
       flutter analyze
     ignore_failure: true
+
+  # Build number from project age (minutes since first commit)
+  # Benefits: No API dependencies, no race conditions, always increments
+  build_number_script: &build_number_script
+    name: Set build number from project age
+    script: |
+      START_EPOCH=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$PROJECT_START_DATE" "+%s" 2>/dev/null || date -d "$PROJECT_START_DATE" "+%s")
+      NOW_EPOCH=$(date "+%s")
+      BUILD_NUMBER=$(( (NOW_EPOCH - START_EPOCH) / 60 ))
+      echo "Build number: $BUILD_NUMBER (minutes since project start)"
+      echo "BUILD_NUMBER=$BUILD_NUMBER" >> $CM_ENV
 
 workflows:
   # ============================================================
@@ -51,6 +66,7 @@ workflows:
       groups:
         - app_store_credentials
       vars:
+        <<: *shared_vars
         BUNDLE_ID: "com.neogridpoint.tonicsound"
         APP_STORE_APP_ID: 6755808046
       ios_signing:
@@ -77,12 +93,7 @@ workflows:
           cd ios
           pod install
 
-      - name: Set build number
-        script: |
-          # Get latest TestFlight build number and increment
-          BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "$APP_STORE_APP_ID") + 1))
-          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $CM_ENV
-          echo "Next build number: $BUILD_NUMBER"
+      - *build_number_script
 
       - name: Set up code signing
         script: |
@@ -169,6 +180,7 @@ workflows:
       groups:
         - app_store_credentials
       vars:
+        <<: *shared_vars
         BUNDLE_ID: "com.neogridpoint.tonicsound"
         APP_STORE_APP_ID: 6755808046
       ios_signing:
@@ -193,10 +205,7 @@ workflows:
           cd ios
           pod install
 
-      - name: Set build number
-        script: |
-          BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "$APP_STORE_APP_ID") + 1))
-          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $CM_ENV
+      - *build_number_script
 
       - name: Set up code signing
         script: |
@@ -277,6 +286,7 @@ workflows:
       groups:
         - app_store_credentials
       vars:
+        <<: *shared_vars
         BUNDLE_ID: "com.neogridpoint.tonicsound"
         APP_STORE_APP_ID: 6755808046
       ios_signing:
@@ -301,10 +311,7 @@ workflows:
           cd ios
           pod install
 
-      - name: Set build number
-        script: |
-          BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "$APP_STORE_APP_ID") + 1))
-          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $CM_ENV
+      - *build_number_script
 
       - name: Set up code signing
         script: |
@@ -444,6 +451,7 @@ workflows:
       groups:
         - google_play_credentials
       vars:
+        <<: *shared_vars
         PACKAGE_NAME: "com.neogridpoint.tonicsound"
 
     triggering:
@@ -473,12 +481,7 @@ workflows:
           storeFile=$CM_BUILD_DIR/keystore.jks
           EOF
 
-      - name: Get build number from Google Play
-        script: |
-          BUILD_NUMBER=$(($(google-play get-latest-build-number \
-            --package-name "$PACKAGE_NAME" \
-            --tracks internal) + 1))
-          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $CM_ENV
+      - *build_number_script
 
       - name: Build Android App Bundle
         script: |
