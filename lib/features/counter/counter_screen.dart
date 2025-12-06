@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../core/analytics/analytics_service.dart';
 import '../../shared/constants/enums.dart';
 import '../../shared/constants/test_keys.dart';
 import '../../shared/theme/tonic_colors.dart';
+import '../onboarding/onboarding_provider.dart';
+import '../onboarding/widgets/quiz_prompt_sheet.dart';
 import 'counter_provider.dart';
 import 'widgets/strength_slider.dart';
 import 'widgets/timer_display.dart';
@@ -12,8 +15,77 @@ import 'widgets/tonic_bottle.dart';
 /// Main Counter screen - the primary interface for playing tonics.
 /// Features elegant Victorian apothecary design with the tonic bottle,
 /// strength controls, and dosage selection.
-class CounterScreen extends StatelessWidget {
+class CounterScreen extends StatefulWidget {
   const CounterScreen({super.key});
+
+  @override
+  State<CounterScreen> createState() => _CounterScreenState();
+}
+
+class _CounterScreenState extends State<CounterScreen> {
+  bool _wasPlaying = false;
+  PlaybackProvider? _playbackProvider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Remove old listener if provider changed
+    _playbackProvider?.removeListener(_onPlaybackStateChanged);
+
+    // Add listener to current provider
+    _playbackProvider = context.read<PlaybackProvider>();
+    _playbackProvider?.addListener(_onPlaybackStateChanged);
+  }
+
+  @override
+  void dispose() {
+    // Remove listener when widget is disposed
+    _playbackProvider?.removeListener(_onPlaybackStateChanged);
+    super.dispose();
+  }
+
+  void _onPlaybackStateChanged() {
+    final playback = context.read<PlaybackProvider>();
+    final isNowIdle = playback.isIdle;
+
+    // Detect transition from playing/paused to idle
+    if (_wasPlaying && isNowIdle) {
+      _maybeShowQuizPrompt();
+    }
+
+    _wasPlaying = playback.isPlaying || playback.isPaused;
+  }
+
+  Future<void> _maybeShowQuizPrompt() async {
+    final onboarding = context.read<OnboardingProvider>();
+
+    if (onboarding.shouldShowQuizPrompt) {
+      // Track that we're showing the prompt
+      AnalyticsService.instance.trackContextualQuizPromptShown();
+
+      // Small delay for better UX
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (!mounted) return;
+
+      final accepted = await QuizPromptSheet.show(context);
+
+      // Track response
+      AnalyticsService.instance.trackContextualQuizPromptResponse(
+        accepted: accepted ?? false,
+      );
+
+      // Mark as shown so we don't show again
+      await onboarding.markQuizPromptShown();
+
+      if (accepted == true && mounted) {
+        // Navigate to quiz - reset onboarding to go to quiz
+        await onboarding.resetOnboarding();
+        onboarding.goToQuiz();
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

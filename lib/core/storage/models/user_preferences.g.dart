@@ -23,13 +23,15 @@ class UserPreferencesAdapter extends TypeAdapter<UserPreferences> {
       lastUsedSoundType: fields[3] as String,
       defaultStrength: fields[4] as double,
       defaultDosageMinutes: fields[5] as int,
+      onboardingMethod: fields[6] as String?,
+      contextualQuizPromptShown: fields[7] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserPreferences obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.onboardingComplete)
       ..writeByte(1)
@@ -41,7 +43,11 @@ class UserPreferencesAdapter extends TypeAdapter<UserPreferences> {
       ..writeByte(4)
       ..write(obj.defaultStrength)
       ..writeByte(5)
-      ..write(obj.defaultDosageMinutes);
+      ..write(obj.defaultDosageMinutes)
+      ..writeByte(6)
+      ..write(obj.onboardingMethod)
+      ..writeByte(7)
+      ..write(obj.contextualQuizPromptShown);
   }
 
   @override

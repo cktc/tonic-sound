@@ -70,6 +70,8 @@ class StorageService {
     String? lastUsedSoundType,
     double? defaultStrength,
     int? defaultDosageMinutes,
+    String? onboardingMethod,
+    bool? contextualQuizPromptShown,
   }) async {
     final prefs = getPreferences();
 
@@ -86,6 +88,12 @@ class StorageService {
     if (defaultStrength != null) prefs.defaultStrength = defaultStrength;
     if (defaultDosageMinutes != null) {
       prefs.defaultDosageMinutes = defaultDosageMinutes;
+    }
+    if (onboardingMethod != null) {
+      prefs.onboardingMethod = onboardingMethod;
+    }
+    if (contextualQuizPromptShown != null) {
+      prefs.contextualQuizPromptShown = contextualQuizPromptShown;
     }
 
     await prefs.save();

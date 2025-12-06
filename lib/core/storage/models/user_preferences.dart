@@ -13,6 +13,8 @@ class UserPreferences extends HiveObject {
     this.lastUsedSoundType = 'tonic',
     this.defaultStrength = 0.5,
     this.defaultDosageMinutes = 30,
+    this.onboardingMethod,
+    this.contextualQuizPromptShown = false,
   });
 
   /// Whether the user has completed onboarding
@@ -39,9 +41,23 @@ class UserPreferences extends HiveObject {
   @HiveField(5)
   int defaultDosageMinutes;
 
+  /// How user completed onboarding: 'quiz_completed' or 'skipped'
+  @HiveField(6)
+  String? onboardingMethod;
+
+  /// Whether we've shown the contextual quiz prompt to skippers
+  @HiveField(7)
+  bool contextualQuizPromptShown;
+
   /// Box name for Hive storage
   static const String boxName = 'user_preferences';
 
   /// Key for the single preferences object
   static const String storageKey = 'preferences';
+
+  /// Whether user skipped onboarding and hasn't seen quiz prompt yet
+  bool get shouldShowQuizPrompt =>
+      onboardingComplete &&
+      onboardingMethod == 'skipped' &&
+      !contextualQuizPromptShown;
 }

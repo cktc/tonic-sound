@@ -83,7 +83,10 @@ class AnalyticsService {
   /// Track onboarding started
   void trackOnboardingStarted({String source = 'app_launch'}) {
     timeEvent('onboarding_flow');
-    track('onboarding_started', {'source': source});
+    track('onboarding_started', {
+      'source': source,
+      'onboarding_version': onboardingVersion,
+    });
   }
 
   /// Track onboarding screen viewed
@@ -131,13 +134,46 @@ class AnalyticsService {
     track('onboarding_skipped', {
       'at_screen': atScreen,
       'quiz_started': quizStarted,
+      'onboarding_version': onboardingVersion,
     });
   }
 
   /// Track onboarding completed
   void trackOnboardingCompleted({required String method}) {
-    track('onboarding_completed', {'method': method});
+    track('onboarding_completed', {
+      'method': method,
+      'onboarding_version': onboardingVersion,
+    });
     track('onboarding_flow'); // Ends the timed event
+  }
+
+  /// Track default prescription applied (for skippers)
+  void trackDefaultPrescriptionApplied({
+    required String tonicId,
+    required double strength,
+    required int dosageMinutes,
+  }) {
+    track('default_prescription_applied', {
+      'tonic_id': tonicId,
+      'strength': strength,
+      'dosage_minutes': dosageMinutes,
+      'onboarding_version': onboardingVersion,
+    });
+  }
+
+  /// Track contextual quiz prompt shown (after first playback)
+  void trackContextualQuizPromptShown() {
+    track('contextual_quiz_prompt_shown', {
+      'onboarding_version': onboardingVersion,
+    });
+  }
+
+  /// Track contextual quiz prompt response
+  void trackContextualQuizPromptResponse({required bool accepted}) {
+    track('contextual_quiz_prompt_response', {
+      'accepted': accepted,
+      'onboarding_version': onboardingVersion,
+    });
   }
 
   // ============================================================
@@ -346,6 +382,11 @@ class AnalyticsService {
     people.set('last_seen', DateTime.now().toIso8601String());
   }
 
+  /// Current onboarding version for A/B comparison
+  /// v1 = original (4 screens + 5 questions)
+  /// v2 = streamlined (1 screen + 3 questions)
+  static const String onboardingVersion = 'v2';
+
   /// Register super properties that persist across all events
   void registerSuperProperties({
     bool? onboardingComplete,
@@ -360,6 +401,9 @@ class AnalyticsService {
     if (preferredSoundType != null) {
       props['preferred_sound_type'] = preferredSoundType;
     }
+    // Always include onboarding version for cohort comparison
+    props['onboarding_version'] = onboardingVersion;
+
     if (props.isNotEmpty) {
       _mixpanel!.registerSuperProperties(props);
     }

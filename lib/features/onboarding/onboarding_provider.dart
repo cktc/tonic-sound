@@ -38,7 +38,10 @@ class OnboardingProvider extends ChangeNotifier {
 
   /// Skip onboarding and mark as complete
   Future<void> skipOnboarding() async {
-    await _storageService.updatePreferences(onboardingComplete: true);
+    await _storageService.updatePreferences(
+      onboardingComplete: true,
+      onboardingMethod: 'skipped',
+    );
     notifyListeners();
   }
 
@@ -47,11 +50,21 @@ class OnboardingProvider extends ChangeNotifier {
     // Save the prescription settings as defaults
     await _storageService.updatePreferences(
       onboardingComplete: true,
+      onboardingMethod: 'quiz_completed',
       lastSelectedTonicId: prescription.recommendedTonic.id,
       defaultStrength: prescription.recommendedStrength,
       defaultDosageMinutes: prescription.recommendedDosage,
     );
 
+    notifyListeners();
+  }
+
+  /// Whether user should see the contextual quiz prompt
+  bool get shouldShowQuizPrompt => _storageService.getPreferences().shouldShowQuizPrompt;
+
+  /// Mark the contextual quiz prompt as shown
+  Future<void> markQuizPromptShown() async {
+    await _storageService.updatePreferences(contextualQuizPromptShown: true);
     notifyListeners();
   }
 

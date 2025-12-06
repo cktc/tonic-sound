@@ -5,9 +5,10 @@ import '../counter/counter_provider.dart';
 import 'onboarding_provider.dart';
 import 'prescription_service.dart';
 import 'quiz/quiz_screen.dart';
-import 'screens/consultation_screen.dart';
-import 'screens/differentiation_screen.dart';
 import 'screens/welcome_screen.dart';
+// Removed in v2 onboarding:
+// import 'screens/consultation_screen.dart';
+// import 'screens/differentiation_screen.dart';
 
 /// Main onboarding flow controller.
 /// Manages navigation between welcome screens and quiz.
@@ -34,30 +35,19 @@ class OnboardingFlow extends StatelessWidget {
   Widget _buildScreen(BuildContext context, OnboardingProvider onboarding) {
     final analytics = AnalyticsService.instance;
 
+    // v2 onboarding: Welcome (with quiz CTA) -> Quiz
+    // Removed: Differentiation screen, Consultation screen
     switch (onboarding.currentPage) {
       case 0:
         analytics.trackOnboardingScreenViewed('welcome');
         return WelcomeScreen(
           key: const ValueKey('welcome'),
-          onNext: () => onboarding.nextPage(),
-          onSkip: () => _skipOnboarding(context, onboarding, 'welcome'),
-        );
-      case 1:
-        analytics.trackOnboardingScreenViewed('differentiation');
-        return DifferentiationScreen(
-          key: const ValueKey('differentiation'),
-          onNext: () => onboarding.nextPage(),
-          onSkip: () => _skipOnboarding(context, onboarding, 'differentiation'),
-        );
-      case 2:
-        analytics.trackOnboardingScreenViewed('consultation');
-        return ConsultationScreen(
-          key: const ValueKey('consultation'),
-          onStartQuiz: () {
+          onNext: () {
+            // Go directly to quiz
             analytics.trackQuizStarted();
             onboarding.nextPage();
           },
-          onSkip: () => _skipOnboarding(context, onboarding, 'consultation'),
+          onSkip: () => _skipOnboarding(context, onboarding, 'welcome'),
         );
       default:
         analytics.trackOnboardingScreenViewed('quiz');
@@ -84,6 +74,21 @@ class OnboardingFlow extends StatelessWidget {
       quizStarted: quizStarted,
     );
     analytics.trackOnboardingCompleted(method: 'skipped');
+
+    // Apply default prescription for skippers (Rest is most popular)
+    final defaultPrescription = PrescriptionService.defaultPrescription();
+    final playbackProvider = context.read<PlaybackProvider>();
+
+    playbackProvider.selectTonic(defaultPrescription.recommendedTonic);
+    playbackProvider.setStrength(defaultPrescription.recommendedStrength);
+    playbackProvider.setDosage(defaultPrescription.recommendedDosage);
+
+    // Track that we applied a default prescription
+    analytics.trackDefaultPrescriptionApplied(
+      tonicId: defaultPrescription.recommendedTonic.id,
+      strength: defaultPrescription.recommendedStrength,
+      dosageMinutes: defaultPrescription.recommendedDosage,
+    );
 
     // Update super properties
     analytics.registerSuperProperties(onboardingComplete: true);
