@@ -7,6 +7,14 @@ PODS:
   - Flutter (1.0.0)
   - flutter_pcm_sound (0.0.1):
     - Flutter
+  - haptic_feedback (0.5.1):
+    - Flutter
+  - Mixpanel-swift (5.1.0):
+    - Mixpanel-swift/Complete (= 5.1.0)
+  - Mixpanel-swift/Complete (5.1.0)
+  - mixpanel_flutter (2.4.4):
+    - Flutter
+    - Mixpanel-swift (= 5.1.0)
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -21,9 +29,15 @@ DEPENDENCIES:
   - audio_session (from `.symlinks/plugins/audio_session/ios`)
   - Flutter (from `Flutter`)
   - flutter_pcm_sound (from `.symlinks/plugins/flutter_pcm_sound/ios`)
+  - haptic_feedback (from `.symlinks/plugins/haptic_feedback/ios`)
+  - mixpanel_flutter (from `.symlinks/plugins/mixpanel_flutter/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - sqflite_darwin (from `.symlinks/plugins/sqflite_darwin/darwin`)
   - volume_controller (from `.symlinks/plugins/volume_controller/ios`)
+
+SPEC REPOS:
+  trunk:
+    - Mixpanel-swift
 
 EXTERNAL SOURCES:
   audio_service:
@@ -34,6 +48,10 @@ EXTERNAL SOURCES:
     :path: Flutter
   flutter_pcm_sound:
     :path: ".symlinks/plugins/flutter_pcm_sound/ios"
+  haptic_feedback:
+    :path: ".symlinks/plugins/haptic_feedback/ios"
+  mixpanel_flutter:
+    :path: ".symlinks/plugins/mixpanel_flutter/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
   sqflite_darwin:
@@ -46,6 +64,9 @@ SPEC CHECKSUMS:
   audio_session: 9bb7f6c970f21241b19f5a3658097ae459681ba0
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_pcm_sound: e9c2f6ce580eefcab2af46763f0354484d5c4ac8
+  haptic_feedback: fd1d8509833f58f164fc12122c0357fa9b2750e0
+  Mixpanel-swift: 7b26468fc0e2e521104e51d65c4bbf7cab8162f8
+  mixpanel_flutter: a0b6b937035899cd01951735ad5f87718b2ffee5
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
   volume_controller: ca1cde542ee70fad77d388f82e9616488110942b
