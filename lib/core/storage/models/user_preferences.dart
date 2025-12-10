@@ -15,6 +15,11 @@ class UserPreferences extends HiveObject {
     this.defaultDosageMinutes = 30,
     this.onboardingMethod,
     this.contextualQuizPromptShown = false,
+    this.installDate,
+    this.sessionCount = 0,
+    this.lastSessionDate,
+    this.firstPlaybackCompleted = false,
+    this.notificationPermissionRequested = false,
   });
 
   /// Whether the user has completed onboarding
@@ -48,6 +53,26 @@ class UserPreferences extends HiveObject {
   /// Whether we've shown the contextual quiz prompt to skippers
   @HiveField(7)
   bool contextualQuizPromptShown;
+
+  /// Date when the app was first installed (for cohort analysis)
+  @HiveField(8)
+  DateTime? installDate;
+
+  /// Total number of app sessions
+  @HiveField(9)
+  int sessionCount;
+
+  /// Date of the last session (for calculating days since last session)
+  @HiveField(10)
+  DateTime? lastSessionDate;
+
+  /// Whether the user has completed their first full playback session
+  @HiveField(11)
+  bool firstPlaybackCompleted;
+
+  /// Whether we've requested notification permission
+  @HiveField(12)
+  bool notificationPermissionRequested;
 
   /// Box name for Hive storage
   static const String boxName = 'user_preferences';

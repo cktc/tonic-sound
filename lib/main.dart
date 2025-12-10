@@ -82,6 +82,7 @@ Future<void> main() async {
           ChangeNotifierProvider<PlaybackProvider>(
             create: (context) => PlaybackProvider(
               audioService: tonicAudioService,
+              storageService: storageService,
             ),
           ),
         ],
@@ -122,15 +123,27 @@ class _TonicAppState extends State<TonicApp> {
     });
   }
 
-  void _checkOnboardingStatus() {
+  Future<void> _checkOnboardingStatus() async {
     try {
+      final storageService = context.read<StorageService>();
       final preferencesProvider = context.read<PreferencesProvider>();
       final onboardingComplete = preferencesProvider.onboardingComplete;
       _isFirstLaunch = !onboardingComplete;
 
+      // Record new session and get session metadata
+      final sessionData = await storageService.recordNewSession();
+
+      // Track session started (for retention cohort analysis)
+      AnalyticsService.instance.trackSessionStarted(
+        sessionNumber: sessionData['sessionNumber'] as int,
+        daysSinceInstall: sessionData['daysSinceInstall'] as int,
+        daysSinceLastSession: sessionData['daysSinceLastSession'] as int,
+        onboardingComplete: onboardingComplete,
+      );
+
       // Track app opened
       AnalyticsService.instance.trackAppOpened(
-        version: '1.0.1',
+        version: '1.0.2',
         isFirstLaunch: _isFirstLaunch,
         onboardingComplete: onboardingComplete,
       );

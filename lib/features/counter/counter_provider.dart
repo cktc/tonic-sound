@@ -4,6 +4,7 @@ import 'package:volume_controller/volume_controller.dart';
 import '../../core/analytics/analytics_service.dart';
 import '../../core/audio/services/tonic_audio_service.dart';
 import '../../core/audio/services/playback_state.dart';
+import '../../core/storage/storage_service.dart';
 import '../../shared/constants/enums.dart';
 import '../../shared/constants/tonic_catalog.dart';
 
@@ -11,8 +12,11 @@ import '../../shared/constants/tonic_catalog.dart';
 /// Acts as a bridge between the UI and the audio service.
 /// Syncs the strength slider with iOS system volume for hardware button control.
 class PlaybackProvider extends ChangeNotifier {
-  PlaybackProvider({required TonicAudioService audioService})
-      : _audioService = audioService {
+  PlaybackProvider({
+    required TonicAudioService audioService,
+    StorageService? storageService,
+  })  : _audioService = audioService,
+        _storageService = storageService {
     // Subscribe to audio service state changes
     _subscription = _audioService.stateStream.listen(_onStateChanged);
 
@@ -21,6 +25,7 @@ class PlaybackProvider extends ChangeNotifier {
   }
 
   final TonicAudioService _audioService;
+  final StorageService? _storageService;
   final AnalyticsService _analytics = AnalyticsService.instance;
   StreamSubscription<PlaybackState>? _subscription;
   StreamSubscription<double>? _volumeSubscription;
@@ -213,6 +218,22 @@ class PlaybackProvider extends ChangeNotifier {
       completedDosage: completedDosage,
       stopReason: 'manual',
     );
+
+    // Track first playback completed (one-time activation event)
+    // Fires when user completes at least 1 minute of playback for the first time
+    final storage = _storageService;
+    if (storage != null &&
+        !storage.isFirstPlaybackCompleted() &&
+        elapsed >= 1.0) {
+      _analytics.trackFirstPlaybackCompleted(
+        soundId: _currentSoundId,
+        soundType: _soundType,
+        elapsedMinutes: elapsed,
+        daysSinceInstall: storage.getDaysSinceInstall(),
+        sessionNumber: storage.getSessionCount(),
+      );
+      await storage.markFirstPlaybackCompleted();
+    }
 
     _playbackStartTime = null;
     await _audioService.cap();

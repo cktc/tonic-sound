@@ -76,6 +76,21 @@ class AnalyticsService {
     });
   }
 
+  /// Track session started (for retention cohort analysis)
+  void trackSessionStarted({
+    required int sessionNumber,
+    required int daysSinceInstall,
+    required int daysSinceLastSession,
+    required bool onboardingComplete,
+  }) {
+    track('session_started', {
+      'session_number': sessionNumber,
+      'days_since_install': daysSinceInstall,
+      'days_since_last_session': daysSinceLastSession,
+      'onboarding_complete': onboardingComplete,
+    });
+  }
+
   // ============================================================
   // Onboarding Events
   // ============================================================
@@ -239,6 +254,23 @@ class AnalyticsService {
     track('playback_session'); // Ends the timed event
   }
 
+  /// Track first playback completed (one-time activation event)
+  void trackFirstPlaybackCompleted({
+    required String soundId,
+    required SoundType soundType,
+    required double elapsedMinutes,
+    required int daysSinceInstall,
+    required int sessionNumber,
+  }) {
+    track('first_playback_completed', {
+      'sound_id': soundId,
+      'sound_type': soundType.name,
+      'elapsed_minutes': elapsedMinutes,
+      'days_since_install': daysSinceInstall,
+      'session_number': sessionNumber,
+    });
+  }
+
   // ============================================================
   // Sound Selection Events
   // ============================================================
@@ -354,6 +386,32 @@ class AnalyticsService {
     track('settings_action', {
       'action': action,
       'confirmed': confirmed,
+    });
+  }
+
+  // ============================================================
+  // Permission Events
+  // ============================================================
+
+  /// Track notification permission requested
+  void trackNotificationPermissionRequested({
+    required String screen,
+    required int daysSinceInstall,
+  }) {
+    track('notification_permission_requested', {
+      'screen': screen,
+      'days_since_install': daysSinceInstall,
+    });
+  }
+
+  /// Track notification permission response
+  void trackNotificationPermissionResponse({
+    required bool granted,
+    required String screen,
+  }) {
+    track('notification_permission_response', {
+      'granted': granted,
+      'screen': screen,
     });
   }
 

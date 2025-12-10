@@ -72,6 +72,8 @@ class StorageService {
     int? defaultDosageMinutes,
     String? onboardingMethod,
     bool? contextualQuizPromptShown,
+    bool? firstPlaybackCompleted,
+    bool? notificationPermissionRequested,
   }) async {
     final prefs = getPreferences();
 
@@ -95,7 +97,78 @@ class StorageService {
     if (contextualQuizPromptShown != null) {
       prefs.contextualQuizPromptShown = contextualQuizPromptShown;
     }
+    if (firstPlaybackCompleted != null) {
+      prefs.firstPlaybackCompleted = firstPlaybackCompleted;
+    }
+    if (notificationPermissionRequested != null) {
+      prefs.notificationPermissionRequested = notificationPermissionRequested;
+    }
 
+    await prefs.save();
+  }
+
+  /// Record a new session and return session metadata for analytics
+  /// Returns: {sessionNumber, daysSinceInstall, daysSinceLastSession, isFirstSession}
+  Future<Map<String, dynamic>> recordNewSession() async {
+    _ensureInitialized();
+    final prefs = getPreferences();
+    final now = DateTime.now();
+
+    // Initialize install date if first session
+    final isFirstSession = prefs.installDate == null;
+    if (isFirstSession) {
+      prefs.installDate = now;
+    }
+
+    // Calculate days since install
+    final daysSinceInstall = prefs.installDate != null
+        ? now.difference(prefs.installDate!).inDays
+        : 0;
+
+    // Calculate days since last session
+    final daysSinceLastSession = prefs.lastSessionDate != null
+        ? now.difference(prefs.lastSessionDate!).inDays
+        : 0;
+
+    // Increment session count
+    prefs.sessionCount += 1;
+    prefs.lastSessionDate = now;
+
+    await prefs.save();
+
+    return {
+      'sessionNumber': prefs.sessionCount,
+      'daysSinceInstall': daysSinceInstall,
+      'daysSinceLastSession': daysSinceLastSession,
+      'isFirstSession': isFirstSession,
+    };
+  }
+
+  /// Get current session number
+  int getSessionCount() {
+    _ensureInitialized();
+    return getPreferences().sessionCount;
+  }
+
+  /// Get days since install
+  int getDaysSinceInstall() {
+    _ensureInitialized();
+    final prefs = getPreferences();
+    if (prefs.installDate == null) return 0;
+    return DateTime.now().difference(prefs.installDate!).inDays;
+  }
+
+  /// Check if first playback has been completed
+  bool isFirstPlaybackCompleted() {
+    _ensureInitialized();
+    return getPreferences().firstPlaybackCompleted;
+  }
+
+  /// Mark first playback as completed
+  Future<void> markFirstPlaybackCompleted() async {
+    _ensureInitialized();
+    final prefs = getPreferences();
+    prefs.firstPlaybackCompleted = true;
     await prefs.save();
   }
 

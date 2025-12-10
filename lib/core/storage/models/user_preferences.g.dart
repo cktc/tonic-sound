@@ -25,13 +25,18 @@ class UserPreferencesAdapter extends TypeAdapter<UserPreferences> {
       defaultDosageMinutes: fields[5] as int,
       onboardingMethod: fields[6] as String?,
       contextualQuizPromptShown: fields[7] as bool,
+      installDate: fields[8] as DateTime?,
+      sessionCount: fields[9] as int,
+      lastSessionDate: fields[10] as DateTime?,
+      firstPlaybackCompleted: fields[11] as bool,
+      notificationPermissionRequested: fields[12] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserPreferences obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(13)
       ..writeByte(0)
       ..write(obj.onboardingComplete)
       ..writeByte(1)
@@ -47,7 +52,17 @@ class UserPreferencesAdapter extends TypeAdapter<UserPreferences> {
       ..writeByte(6)
       ..write(obj.onboardingMethod)
       ..writeByte(7)
-      ..write(obj.contextualQuizPromptShown);
+      ..write(obj.contextualQuizPromptShown)
+      ..writeByte(8)
+      ..write(obj.installDate)
+      ..writeByte(9)
+      ..write(obj.sessionCount)
+      ..writeByte(10)
+      ..write(obj.lastSessionDate)
+      ..writeByte(11)
+      ..write(obj.firstPlaybackCompleted)
+      ..writeByte(12)
+      ..write(obj.notificationPermissionRequested);
   }
 
   @override
