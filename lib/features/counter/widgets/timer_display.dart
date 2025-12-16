@@ -101,37 +101,37 @@ class _TimerDisplayState extends State<TimerDisplay>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Tappable timer
+        // Tappable timer - digits centered, chevron offset to the right
         GestureDetector(
+          key: TonicTestKeys.counterTimerDisplay,
           onTap: _toggle,
           behavior: HitTestBehavior.opaque,
-          child: Container(
-            key: TonicTestKeys.counterTimerDisplay,
+          child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
+            child: Stack(
+              alignment: Alignment.center,
+              clipBehavior: Clip.none,
               children: [
-                // Animated timer digits with pendulum effect
+                // Centered digits
                 _AnimatedTimeDisplay(
                   time: widget.remainingTime,
                   isActive: widget.isActive,
                 ),
-                // Tap indicator (subtle chevron)
-                if (canInteract) ...[
-                  const SizedBox(width: 8),
-                  AnimatedRotation(
-                    turns: _isExpanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOutCubic,
-                    child: Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      size: 24,
-                      color: TonicColors.textMuted.withValues(alpha: 0.6),
+                // Chevron positioned to the right of digits
+                if (canInteract)
+                  Positioned(
+                    right: -32,
+                    child: AnimatedRotation(
+                      turns: _isExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 24,
+                        color: TonicColors.textMuted.withValues(alpha: 0.6),
+                      ),
                     ),
                   ),
-                ],
               ],
             ),
           ),

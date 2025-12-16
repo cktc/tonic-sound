@@ -43,8 +43,8 @@ class PlaybackProvider extends ChangeNotifier {
   Botanical? _selectedBotanical;
   Botanical? get selectedBotanical => _selectedBotanical;
 
-  /// Current dosage setting in minutes
-  int _dosageMinutes = 30;
+  /// Current dosage setting in minutes (default: 8 hours)
+  int _dosageMinutes = 480;
   int get dosageMinutes => _dosageMinutes;
 
   /// Current strength setting (0.0 to 1.0)
@@ -103,18 +103,77 @@ class PlaybackProvider extends ChangeNotifier {
   }
 
   /// Select a Tonic for the counter
+  /// If playback is active, switches to the new sound immediately
   void selectTonic(Tonic tonic) {
+    final wasPlaying = isPlaying || isPaused;
+    final previousSoundId = _currentSoundId;
+
     _selectedTonic = tonic;
     _selectedBotanical = null;
     _soundType = SoundType.tonic;
     notifyListeners();
+
+    // If playback was active, switch to the new sound
+    if (wasPlaying && previousSoundId != tonic.id) {
+      _switchToCurrentSound();
+    }
   }
 
   /// Select a Botanical for the counter
+  /// If playback is active, switches to the new sound immediately
   void selectBotanical(Botanical botanical) {
+    final wasPlaying = isPlaying || isPaused;
+    final previousSoundId = _currentSoundId;
+
     _selectedBotanical = botanical;
     _soundType = SoundType.botanical;
     notifyListeners();
+
+    // If playback was active, switch to the new sound
+    if (wasPlaying && previousSoundId != botanical.id) {
+      _switchToCurrentSound();
+    }
+  }
+
+  /// Switch audio to the currently selected sound (used when changing sounds mid-playback)
+  Future<void> _switchToCurrentSound() async {
+    // Track the sound switch
+    _analytics.trackPlaybackStopped(
+      soundId: _currentSoundId,
+      soundType: _soundType,
+      elapsedMinutes: _elapsedMinutes,
+      intendedDosageMinutes: _dosageMinutes,
+      completedDosage: false,
+      stopReason: 'sound_switched',
+    );
+
+    // Get remaining time from current state to continue the session
+    final remainingSeconds = state.remainingSeconds;
+    final remainingMinutes = (remainingSeconds / 60).ceil();
+
+    // Start the new sound with the remaining time
+    _playbackStartTime = DateTime.now();
+
+    _analytics.trackPlaybackStarted(
+      soundId: _currentSoundId,
+      soundType: _soundType,
+      dosageMinutes: remainingMinutes,
+      strength: _strength,
+    );
+
+    if (_soundType == SoundType.tonic) {
+      await _audioService.dispenseTonic(
+        _selectedTonic,
+        dosageMinutes: remainingMinutes,
+        strength: _strength,
+      );
+    } else if (_selectedBotanical != null) {
+      await _audioService.dispenseBotanical(
+        _selectedBotanical!,
+        dosageMinutes: remainingMinutes,
+        strength: _strength,
+      );
+    }
   }
 
   /// Set the dosage duration
@@ -233,6 +292,8 @@ class PlaybackProvider extends ChangeNotifier {
         sessionNumber: storage.getSessionCount(),
       );
       await storage.markFirstPlaybackCompleted();
+      // Flush immediately - this is a critical one-time activation event
+      _analytics.flush();
     }
 
     _playbackStartTime = null;

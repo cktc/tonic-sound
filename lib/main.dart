@@ -4,11 +4,12 @@ import 'package:provider/provider.dart';
 import 'package:audio_service/audio_service.dart';
 
 import 'core/analytics/analytics_service.dart';
+import 'core/utils/build_info.dart';
 import 'core/storage/storage_service.dart';
 import 'core/audio/services/audio_service_handler.dart';
 import 'core/audio/services/tonic_audio_service.dart';
 import 'features/counter/counter_provider.dart';
-import 'features/onboarding/onboarding_flow.dart';
+import 'features/onboarding/tuning/tuning_onboarding_flow.dart';
 import 'shared/navigation/app_router.dart';
 import 'features/onboarding/onboarding_provider.dart';
 import 'shared/providers/preferences_provider.dart';
@@ -31,6 +32,9 @@ Future<void> main() async {
 
     // Initialize Mixpanel analytics
     await AnalyticsService.instance.initialize();
+
+    // Initialize build info (for version display)
+    await BuildInfo.init();
 
     // Initialize audio service for background playback and lock screen controls
     audioHandler = await AudioService.init(
@@ -141,9 +145,17 @@ class _TonicAppState extends State<TonicApp> {
         onboardingComplete: onboardingComplete,
       );
 
+      // Track app installed (first launch only - acquisition funnel)
+      if (_isFirstLaunch) {
+        AnalyticsService.instance.trackAppInstalled(
+          version: BuildInfo.version,
+          platform: 'ios', // iOS-only app
+        );
+      }
+
       // Track app opened
       AnalyticsService.instance.trackAppOpened(
-        version: '1.0.2',
+        version: BuildInfo.version,
         isFirstLaunch: _isFirstLaunch,
         onboardingComplete: onboardingComplete,
       );
@@ -200,7 +212,7 @@ class _TonicAppState extends State<TonicApp> {
 
     // Show onboarding or main app
     if (_showOnboarding!) {
-      return OnboardingFlow(onComplete: _onOnboardingComplete);
+      return TuningOnboardingFlow(onComplete: _onOnboardingComplete);
     } else {
       return const AppShell();
     }

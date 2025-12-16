@@ -166,15 +166,17 @@ class _TonicBottleState extends State<TonicBottle>
             ),
           ),
         ),
-        // Subtle hint below the bottle
+        // Minimal CTA hint below the bottle
         const SizedBox(height: 16),
         AnimatedDefaultTextStyle(
           duration: const Duration(milliseconds: 200),
           style: GoogleFonts.sourceSans3(
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: FontWeight.w400,
-            letterSpacing: 1.0,
-            color: TonicColors.textMuted,
+            letterSpacing: 0.5,
+            color: widget.isDispensing || widget.isPaused
+                ? TonicColors.textMuted
+                : TonicColors.textSecondary,
           ),
           child: Text(
             _getBottleLabel(),
@@ -275,16 +277,57 @@ class _TonicBottleState extends State<TonicBottle>
         ],
       ),
       child: Center(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: Icon(
-            _getBottleIcon(),
-            key: ValueKey('${widget.isDispensing}_${widget.isBotanical}'),
-            size: 40,
-            color: widget.color,
-          ),
-        ),
+        child: widget.isDispensing
+            ? _buildWaveformDots()
+            : AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: Icon(
+                  _getBottleIcon(),
+                  key: ValueKey('${widget.isDispensing}_${widget.isBotanical}'),
+                  size: 40,
+                  color: widget.color,
+                ),
+              ),
       ),
+    );
+  }
+
+  /// Animated waveform dots that pulse when playing
+  Widget _buildWaveformDots() {
+    return AnimatedBuilder(
+      animation: _sparkAnimation,
+      builder: (context, child) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(5, (index) {
+            // Staggered animation for wave effect
+            final phase = (index - 2).abs() / 2.0;
+            final animValue = (_sparkAnimation.value + phase) % 1.0;
+            final height = 8.0 + (animValue * 20.0);
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 4,
+                height: height,
+                decoration: BoxDecoration(
+                  color: widget.color.withValues(alpha: 0.6 + (animValue * 0.4)),
+                  borderRadius: BorderRadius.circular(2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.color.withValues(alpha: 0.4),
+                      blurRadius: 4,
+                      spreadRadius: 0,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        );
+      },
     );
   }
 

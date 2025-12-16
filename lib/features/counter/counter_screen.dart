@@ -94,63 +94,105 @@ class _CounterScreenState extends State<CounterScreen> {
       backgroundColor: TonicColors.base,
       body: Consumer<PlaybackProvider>(
         builder: (context, playback, child) {
-          return SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 24),
-                  // Clean header - just tonic name
-                  _buildHeader(context, playback),
-                  const SizedBox(height: 32),
-                  // Timer display with integrated dosage selector
-                  TimerDisplay(
-                    remainingTime: playback.isIdle
-                        ? _formatDuration(playback.dosageMinutes)
-                        : playback.remainingTimeFormatted,
-                    progress: playback.progress,
-                    isActive: playback.isPlaying || playback.isPaused,
-                    selectedMinutes: playback.dosageMinutes,
-                    onDosageChanged: (minutes) => playback.setDosage(minutes),
-                    enabled: playback.isIdle,
-                  ),
-                  const SizedBox(height: 32),
-                  // Bottle - the sole control
-                  // Tap to play/pause, long-press to stop
-                  TonicBottle(
-                    tonic: playback.soundType == SoundType.tonic
-                        ? playback.selectedTonic
-                        : null,
-                    botanical: playback.soundType == SoundType.botanical
-                        ? playback.selectedBotanical
-                        : null,
-                    isDispensing: playback.isPlaying,
-                    isPaused: playback.isPaused,
-                    progress: playback.progress,
-                    onTap: () => _handleBottleTap(context, playback),
-                    onLongPress: (playback.isPlaying || playback.isPaused)
-                        ? () => playback.cap()
-                        : null,
-                  ),
-                  const SizedBox(height: 32),
-                  // Strength slider - minimal
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: StrengthSlider(
-                      value: playback.strength,
-                      onChanged: (value) => playback.setStrength(value),
-                      enabled: true,
+          // Get the tonic color for atmospheric glow
+          final glowColor = playback.soundType == SoundType.botanical
+              ? playback.selectedBotanical?.color ?? TonicColors.accent
+              : playback.selectedTonic.color;
+
+          return Stack(
+            children: [
+              // Atmospheric background with radial gradient
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: const Alignment(0, 0.1), // Slightly above center (bottle area)
+                      radius: 1.2,
+                      colors: [
+                        glowColor.withValues(alpha: playback.isPlaying ? 0.06 : 0.03),
+                        TonicColors.base.withValues(alpha: 0.0),
+                        TonicColors.base,
+                      ],
+                      stops: const [0.0, 0.4, 0.8],
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  // Warning only for high volume
-                  if (playback.safetyLevel == SafetyLevel.high && !playback.isPlaying)
-                    _buildVolumeWarning(context),
-                  const SizedBox(height: 32),
-                ],
+                ),
               ),
-            ),
+              // Vignette effect
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment.center,
+                      radius: 1.0,
+                      colors: [
+                        Colors.transparent,
+                        TonicColors.base.withValues(alpha: 0.3),
+                        TonicColors.base.withValues(alpha: 0.7),
+                      ],
+                      stops: const [0.5, 0.8, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              // Main content
+              SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 32),
+                      // Clean header - just tonic name
+                      _buildHeader(context, playback),
+                      const SizedBox(height: 8),
+                      // Timer display with integrated dosage selector
+                      TimerDisplay(
+                        remainingTime: playback.isIdle
+                            ? _formatDuration(playback.dosageMinutes)
+                            : playback.remainingTimeFormatted,
+                        progress: playback.progress,
+                        isActive: playback.isPlaying || playback.isPaused,
+                        selectedMinutes: playback.dosageMinutes,
+                        onDosageChanged: (minutes) => playback.setDosage(minutes),
+                        enabled: playback.isIdle,
+                      ),
+                      const SizedBox(height: 16),
+                      // Bottle - the sole control
+                      TonicBottle(
+                        tonic: playback.soundType == SoundType.tonic
+                            ? playback.selectedTonic
+                            : null,
+                        botanical: playback.soundType == SoundType.botanical
+                            ? playback.selectedBotanical
+                            : null,
+                        isDispensing: playback.isPlaying,
+                        isPaused: playback.isPaused,
+                        progress: playback.progress,
+                        onTap: () => _handleBottleTap(context, playback),
+                        onLongPress: (playback.isPlaying || playback.isPaused)
+                            ? () => playback.cap()
+                            : null,
+                      ),
+                      const SizedBox(height: 24),
+                      // Strength slider - minimal
+                      StrengthSlider(
+                        value: playback.strength,
+                        onChanged: (value) => playback.setStrength(value),
+                        enabled: true,
+                      ),
+                      // Warning only for high volume
+                      if (playback.safetyLevel == SafetyLevel.high && !playback.isPlaying)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16),
+                          child: _buildVolumeWarning(context),
+                        ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -158,7 +200,7 @@ class _CounterScreenState extends State<CounterScreen> {
   }
 
   Widget _buildHeader(BuildContext context, PlaybackProvider playback) {
-    // Clean, minimal header - show tonic or botanical name
+    // Minimal header - just the tonic name, tagline is in the bottle
     final name = playback.soundType == SoundType.botanical
         ? playback.selectedBotanical?.name ?? ''
         : playback.selectedTonic.name;
@@ -166,7 +208,7 @@ class _CounterScreenState extends State<CounterScreen> {
     return Text(
       name,
       style: GoogleFonts.cormorantGaramond(
-        fontSize: 32,
+        fontSize: 36,
         fontWeight: FontWeight.w500,
         color: TonicColors.textPrimary,
         letterSpacing: 2.0,
@@ -175,6 +217,11 @@ class _CounterScreenState extends State<CounterScreen> {
   }
 
   String _formatDuration(int minutes) {
+    if (minutes >= 60) {
+      final hours = minutes ~/ 60;
+      final mins = minutes % 60;
+      return '$hours:${mins.toString().padLeft(2, '0')}';
+    }
     return '${minutes.toString().padLeft(2, '0')}:00';
   }
 

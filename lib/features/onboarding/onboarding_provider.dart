@@ -59,6 +59,15 @@ class OnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Complete onboarding (generic method for tuning flow)
+  Future<void> completeOnboarding() async {
+    await _storageService.updatePreferences(
+      onboardingComplete: true,
+      onboardingMethod: 'tuning_completed',
+    );
+    notifyListeners();
+  }
+
   /// Whether user should see the contextual quiz prompt
   bool get shouldShowQuizPrompt => _storageService.getPreferences().shouldShowQuizPrompt;
 

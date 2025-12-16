@@ -55,10 +55,17 @@ class PlaybackState {
   /// Whether a Botanical is playing
   bool get isPlayingBotanical => currentBotanical != null && isPlaying;
 
-  /// Formatted remaining time string (MM:SS)
+  /// Formatted remaining time string (H:MM for hours, MM:SS for < 1 hour)
   String get remainingTimeFormatted {
-    final minutes = remainingSeconds ~/ 60;
+    final hours = remainingSeconds ~/ 3600;
+    final minutes = (remainingSeconds % 3600) ~/ 60;
     final seconds = remainingSeconds % 60;
+
+    // >= 1 hour: show H:MM (no seconds)
+    if (hours > 0) {
+      return '$hours:${minutes.toString().padLeft(2, '0')}';
+    }
+    // < 1 hour: show MM:SS
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 

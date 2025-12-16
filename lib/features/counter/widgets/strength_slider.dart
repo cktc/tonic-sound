@@ -71,34 +71,6 @@ class _StrengthSliderState extends State<StrengthSlider> {
             },
           ),
         ),
-        const SizedBox(height: 8),
-        // Evocative endpoint labels
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Gentle',
-                style: GoogleFonts.sourceSans3(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w400,
-                  color: TonicColors.textMuted,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              Text(
-                'Potent',
-                style: GoogleFonts.sourceSans3(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w400,
-                  color: TonicColors.textMuted,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
