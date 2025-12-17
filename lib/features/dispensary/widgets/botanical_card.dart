@@ -6,7 +6,7 @@ import '../../../shared/constants/tonic_catalog.dart';
 import '../../../shared/theme/tonic_colors.dart';
 
 /// Elegant apothecary-style botanical card for the Dispensary.
-/// Features organic design elements with Victorian aesthetics.
+/// Single tap selects the botanical and navigates to Counter.
 class BotanicalCard extends StatelessWidget {
   const BotanicalCard({
     super.key,
@@ -24,11 +24,11 @@ class BotanicalCard extends StatelessWidget {
     return GestureDetector(
       key: TonicTestKeys.dispensaryBotanicalCard,
       onTap: () {
-        Haptics.vibrate(HapticsType.selection);
+        Haptics.vibrate(HapticsType.success);
         onTap();
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
+        duration: const Duration(milliseconds: 200),
         curve: Curves.easeOut,
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -128,9 +128,6 @@ class BotanicalCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 10),
-                  // Selection indicator
-                  _buildSelectionIndicator(),
                 ],
               ),
             ),
@@ -170,40 +167,6 @@ class BotanicalCard extends StatelessWidget {
         _getIconForBotanical(botanical.id),
         size: 26,
         color: botanical.color,
-      ),
-    );
-  }
-
-  Widget _buildSelectionIndicator() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      height: 20,
-      padding: EdgeInsets.symmetric(
-        horizontal: isSelected ? 10 : 0,
-        vertical: isSelected ? 3 : 0,
-      ),
-      decoration: BoxDecoration(
-        color: isSelected ? TonicColors.accent : Colors.transparent,
-        borderRadius: BorderRadius.circular(10),
-        border: isSelected
-            ? Border.all(
-                color: TonicColors.accentLight.withValues(alpha: 0.5),
-                width: 1,
-              )
-            : null,
-      ),
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 200),
-        opacity: isSelected ? 1.0 : 0.0,
-        child: Text(
-          'SELECTED',
-          style: GoogleFonts.sourceSans3(
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.2,
-            color: TonicColors.base,
-          ),
-        ),
       ),
     );
   }

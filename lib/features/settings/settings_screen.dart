@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/analytics/analytics_service.dart';
+import '../../core/utils/build_info.dart';
 import '../../shared/constants/test_keys.dart';
 import '../../shared/providers/preferences_provider.dart';
 import '../../shared/theme/tonic_colors.dart';
@@ -257,9 +258,9 @@ class SettingsScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _InfoPill(label: 'Version', value: '1.0.0'),
+              _InfoPill(label: 'Version', value: BuildInfo.version),
               const SizedBox(width: 12),
-              _InfoPill(label: 'Build', value: '2024.1'),
+              _InfoPill(label: 'Build', value: BuildInfo.buildNumber),
             ],
           ),
         ],

@@ -68,8 +68,9 @@ class OceanGenerator implements NoiseGenerator {
       final wave2 = _shapeWave(sin(_waveLfoPhase2)) * 0.6;
       final wave3 = (sin(_waveLfoPhase3) + 1) / 2 * 0.3; // Slow swell
 
-      // Combined amplitude envelope (0.2 to 1.0 range)
-      final ampEnvelope = 0.2 + ((wave1 + wave2 + wave3) / 1.9) * 0.8;
+      // Combined amplitude envelope (0.35 to 1.0 range)
+      // Higher floor ensures sound is immediately audible
+      final ampEnvelope = 0.35 + ((wave1 + wave2 + wave3) / 1.9) * 0.65;
 
       // Generate brown noise (deep rumble)
       final whiteForBrown = (_random.nextDouble() * 2.0) - 1.0;
@@ -86,7 +87,8 @@ class OceanGenerator implements NoiseGenerator {
       final mixed = (brownNoise * brownMix) + (pinkNoise * pinkMix);
 
       // Dynamic filter - opens up at wave peaks
-      final filterCutoff = 0.03 + (ampEnvelope * 0.12);
+      // Higher base cutoff (0.05) ensures immediate texture is audible
+      final filterCutoff = 0.05 + (ampEnvelope * 0.12);
       _filterState += filterCutoff * (mixed - _filterState);
       _filterState2 += filterCutoff * (_filterState - _filterState2);
 
@@ -134,7 +136,8 @@ class OceanGenerator implements NoiseGenerator {
     _octaveValues = List.filled(_numOctaves, 0.0);
     _pinkCounter = 0;
     _pinkSum = 0.0;
-    _waveLfoPhase1 = 0.0;
+    // Start main wave at peak (π/2) so users hear wave crash immediately
+    _waveLfoPhase1 = pi / 2;
     _waveLfoPhase2 = _random.nextDouble() * 2 * pi; // Random start
     _waveLfoPhase3 = _random.nextDouble() * 2 * pi; // Random start
     _filterState = 0.0;

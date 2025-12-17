@@ -1,4 +1,4 @@
-# App Store Submission: Tonic v1.0.0
+# App Store Submission: Tonic v1.0.2
 
 ## Metadata
 
@@ -26,7 +26,7 @@ Sleep & Focus Sound Therapy (27/30 characters)
 
 ### Promotional Text
 
-Can't sleep? Try white noise, pink noise, or brown noise—generated fresh every time, never loops. Works offline. No ads. Your perfect sleep sound awaits. (168/170 characters)
+Get your personalized sleep prescription in 30 seconds. White, pink, and brown noise—generated fresh, never loops. Works offline. No ads. Sweet dreams await. (161/170 characters)
 
 ### Description
 
@@ -48,7 +48,7 @@ NATURE SOUNDS — Botanical Essences
 
 PERSONALIZED FOR YOU
 
-Take a brief quiz and receive a tailored sound prescription—your ideal noise type, volume, and duration for your specific needs.
+Answer 3 quick questions (30 seconds) and receive a tailored sound prescription—your ideal noise type, volume, and duration for your specific needs. Or skip and start with our most popular tonic.
 
 DESIGNED FOR SLEEP
 
@@ -69,13 +69,25 @@ Whether you're battling insomnia, seeking deeper focus for work, or simply cravi
 
 Cork your distractions. Dispense tranquility.
 
-Character count: 1,789/4,000
+Character count: ~1,850/4,000
 
 ### Keywords
 
 white noise,pink noise,brown noise,relax,meditation,insomnia,concentration,calm,rain,ocean,forest,asmr,deep sleep,relaxation,noise machine,lullaby (99/100 characters)
 
 Note: "sleep" and "focus" removed — already indexed via subtitle
+
+### What's New (v1.0.2)
+
+Faster to your first dose of calm.
+
+› Streamlined onboarding — get your prescription in just 30 seconds
+› Smarter defaults — skip the quiz and start with our most popular tonic
+› Personalized prompts — gentle reminders to customize after your first session
+
+Sleep better, faster.
+
+---
 
 ### What's New (v1.0.0)
 
@@ -105,7 +117,7 @@ Background Audio: The app plays audio while backgrounded and with the screen loc
 
 No Network Required: The app operates entirely offline. All sounds are generated algorithmically on-device or bundled as assets.
 
-Consultation Quiz: On first launch, users are guided through an optional 5-question consultation to determine their ideal tonic. This can be skipped or retaken from Lab Notes.
+Consultation Quiz: On first launch, users are guided through an optional 3-question consultation (30 seconds) to determine their ideal tonic. Users who skip receive a default prescription and are gently prompted to personalize after their first session.
 
 Audio Generation: Tonics (white/pink/brown noise) are generated in real-time using PCM synthesis—not pre-recorded loops.
 

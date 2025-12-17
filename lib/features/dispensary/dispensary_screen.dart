@@ -15,6 +15,7 @@ import 'widgets/tonic_card.dart';
 
 /// Dispensary screen - elegant apothecary-style sound library.
 /// Browse and select tonics and botanicals with Victorian aesthetics.
+/// Single tap selects a sound and navigates to Counter.
 class DispensaryScreen extends StatelessWidget {
   const DispensaryScreen({super.key});
 
@@ -56,10 +57,6 @@ class _DispensaryScreenContent extends StatelessWidget {
                       ? _buildTonicGrid(context, playback)
                       : _buildBotanicalGrid(context, playback),
                 ),
-                // Selection panel
-                if (dispensary.highlightedTonic != null ||
-                    dispensary.highlightedBotanical != null)
-                  _buildSelectionPanel(context, dispensary, playback),
               ],
             ),
           );
@@ -182,7 +179,6 @@ class _DispensaryScreenContent extends StatelessWidget {
 
   Widget _buildTonicGrid(BuildContext context, PlaybackProvider playback) {
     final tonics = Tonic.catalog;
-    final dispensary = context.watch<DispensaryProvider>();
 
     return GridView.builder(
       key: TonicTestKeys.dispensaryTonicGrid,
@@ -191,30 +187,18 @@ class _DispensaryScreenContent extends StatelessWidget {
         crossAxisCount: 2,
         mainAxisSpacing: 14,
         crossAxisSpacing: 14,
-        childAspectRatio: 0.82,
+        childAspectRatio: 0.85,
       ),
       itemCount: tonics.length,
       itemBuilder: (context, index) {
         final tonic = tonics[index];
-        // Show as selected if highlighted OR if it's the current selection in playback
-        final isHighlighted = dispensary.highlightedTonic?.id == tonic.id;
-        final isCurrentSelection = playback.soundType == SoundType.tonic &&
-            playback.selectedTonic.id == tonic.id &&
-            dispensary.highlightedTonic == null &&
-            dispensary.highlightedBotanical == null;
+        final isSelected = playback.soundType == SoundType.tonic &&
+            playback.selectedTonic.id == tonic.id;
 
         return TonicCard(
           tonic: tonic,
-          isSelected: isHighlighted || isCurrentSelection,
-          onTap: () {
-            // Track sound browsed
-            AnalyticsService.instance.trackSoundBrowsed(
-              soundId: tonic.id,
-              soundType: SoundType.tonic,
-              soundName: tonic.name,
-            );
-            dispensary.highlightTonic(tonic);
-          },
+          isSelected: isSelected,
+          onTap: () => _selectTonic(context, playback, tonic),
         );
       },
     );
@@ -222,7 +206,6 @@ class _DispensaryScreenContent extends StatelessWidget {
 
   Widget _buildBotanicalGrid(BuildContext context, PlaybackProvider playback) {
     final botanicals = Botanical.catalog;
-    final dispensary = context.watch<DispensaryProvider>();
 
     return GridView.builder(
       key: TonicTestKeys.dispensaryBotanicalGrid,
@@ -231,234 +214,65 @@ class _DispensaryScreenContent extends StatelessWidget {
         crossAxisCount: 2,
         mainAxisSpacing: 14,
         crossAxisSpacing: 14,
-        childAspectRatio: 0.82,
+        childAspectRatio: 0.85,
       ),
       itemCount: botanicals.length,
       itemBuilder: (context, index) {
         final botanical = botanicals[index];
-        // Show as selected if highlighted OR if it's the current selection in playback
-        final isHighlighted = dispensary.highlightedBotanical?.id == botanical.id;
-        final isCurrentSelection = playback.soundType == SoundType.botanical &&
-            playback.selectedBotanical?.id == botanical.id &&
-            dispensary.highlightedTonic == null &&
-            dispensary.highlightedBotanical == null;
+        final isSelected = playback.soundType == SoundType.botanical &&
+            playback.selectedBotanical?.id == botanical.id;
 
         return BotanicalCard(
           botanical: botanical,
-          isSelected: isHighlighted || isCurrentSelection,
-          onTap: () {
-            // Track sound browsed
-            AnalyticsService.instance.trackSoundBrowsed(
-              soundId: botanical.id,
-              soundType: SoundType.botanical,
-              soundName: botanical.name,
-            );
-            dispensary.highlightBotanical(botanical);
-          },
+          isSelected: isSelected,
+          onTap: () => _selectBotanical(context, playback, botanical),
         );
       },
     );
   }
 
-  Widget _buildSelectionPanel(
+  void _selectTonic(
     BuildContext context,
-    DispensaryProvider dispensary,
     PlaybackProvider playback,
+    Tonic tonic,
   ) {
-    final tonic = dispensary.highlightedTonic;
-    final botanical = dispensary.highlightedBotanical;
+    // Get previous sound ID for tracking
+    final previousSoundId = playback.soundType == SoundType.tonic
+        ? playback.selectedTonic.id
+        : playback.selectedBotanical?.id;
 
-    final name = tonic?.name ?? botanical?.name ?? '';
-    final description = tonic?.description ?? botanical?.description ?? '';
-    final color = tonic?.color ?? botanical?.color ?? TonicColors.accent;
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            TonicColors.surfaceLight,
-            TonicColors.surface,
-          ],
-        ),
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(28),
-        ),
-        border: Border(
-          top: BorderSide(
-            color: color.withValues(alpha: 0.3),
-            width: 1,
-          ),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 24,
-            offset: const Offset(0, -8),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Drag indicator
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: TonicColors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Info row
-            Row(
-              children: [
-                // Icon
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    gradient: RadialGradient(
-                      colors: [
-                        color.withValues(alpha: 0.3),
-                        color.withValues(alpha: 0.1),
-                      ],
-                    ),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: color.withValues(alpha: 0.4),
-                      width: 1,
-                    ),
-                  ),
-                  child: Icon(
-                    tonic != null ? Icons.water_drop_rounded : Icons.eco_rounded,
-                    size: 22,
-                    color: color,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                // Name and type
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
-                        style: GoogleFonts.cormorantGaramond(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w600,
-                          color: TonicColors.textPrimary,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        tonic != null ? 'Generated Sound' : 'Nature Essence',
-                        style: GoogleFonts.sourceSans3(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: color,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Description
-            Text(
-              description,
-              style: GoogleFonts.sourceSans3(
-                fontSize: 13,
-                fontWeight: FontWeight.w400,
-                color: TonicColors.textSecondary,
-                height: 1.4,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 18),
-            // Action button
-            SizedBox(
-              width: double.infinity,
-              child: GestureDetector(
-                onTap: () {
-                  Haptics.vibrate(HapticsType.success);
-
-                  // Get previous sound ID for tracking
-                  final previousSoundId = playback.soundType == SoundType.tonic
-                      ? playback.selectedTonic.id
-                      : playback.selectedBotanical?.id;
-
-                  if (tonic != null) {
-                    // Track sound selected
-                    AnalyticsService.instance.trackSoundSelected(
-                      soundId: tonic.id,
-                      soundType: SoundType.tonic,
-                      soundName: tonic.name,
-                      previousSoundId: previousSoundId,
-                    );
-                    playback.selectTonic(tonic);
-                  } else if (botanical != null) {
-                    // Track sound selected
-                    AnalyticsService.instance.trackSoundSelected(
-                      soundId: botanical.id,
-                      soundType: SoundType.botanical,
-                      soundName: botanical.name,
-                      previousSoundId: previousSoundId,
-                    );
-                    playback.selectBotanical(botanical);
-                  }
-                  dispensary.clearHighlight();
-                  AppShell.switchTab(context, 0);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        TonicColors.accent,
-                        TonicColors.accentDark,
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: TonicColors.accentLight.withValues(alpha: 0.3),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: TonicColors.accent.withValues(alpha: 0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      'Use This Remedy',
-                      style: GoogleFonts.sourceSans3(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                        color: TonicColors.base,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    // Track sound selected
+    AnalyticsService.instance.trackSoundSelected(
+      soundId: tonic.id,
+      soundType: SoundType.tonic,
+      soundName: tonic.name,
+      previousSoundId: previousSoundId,
     );
+
+    playback.selectTonic(tonic);
+    AppShell.switchTab(context, 0);
+  }
+
+  void _selectBotanical(
+    BuildContext context,
+    PlaybackProvider playback,
+    Botanical botanical,
+  ) {
+    // Get previous sound ID for tracking
+    final previousSoundId = playback.soundType == SoundType.tonic
+        ? playback.selectedTonic.id
+        : playback.selectedBotanical?.id;
+
+    // Track sound selected
+    AnalyticsService.instance.trackSoundSelected(
+      soundId: botanical.id,
+      soundType: SoundType.botanical,
+      soundName: botanical.name,
+      previousSoundId: previousSoundId,
+    );
+
+    playback.selectBotanical(botanical);
+    AppShell.switchTab(context, 0);
   }
 }
 

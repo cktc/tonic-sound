@@ -16,8 +16,11 @@ class AnalyticsService {
     return _instance!;
   }
 
-  /// Mixpanel project token
+  /// Mixpanel project token (for SDK initialization)
   static const String _projectToken = '6034ae71ef33911b0306007351b008e1';
+
+  /// Mixpanel project ID (for API queries and dashboard)
+  static const int projectId = 3965470;
 
   /// Whether analytics is initialized
   bool get isInitialized => _mixpanel != null;
@@ -63,6 +66,32 @@ class AnalyticsService {
   // App Lifecycle Events
   // ============================================================
 
+  /// Track app installed (first launch only - critical acquisition event)
+  /// This captures the moment of install for acquisition funnel analysis
+  void trackAppInstalled({
+    required String version,
+    required String platform,
+    String? installSource,
+    String? campaignId,
+  }) {
+    track('app_installed', {
+      'version': version,
+      'platform': platform,
+      'install_source': installSource ?? 'organic',
+      'campaign_id': campaignId,
+      'install_timestamp': DateTime.now().toIso8601String(),
+    });
+    // Flush immediately - this is the top of the acquisition funnel
+    flush();
+
+    // Set user properties for cohort analysis
+    final people = _mixpanel?.getPeople();
+    people?.set('install_version', version);
+    people?.set('install_date', DateTime.now().toIso8601String());
+    people?.set('install_source', installSource ?? 'organic');
+    people?.setOnce('first_seen', DateTime.now().toIso8601String());
+  }
+
   /// Track app opened
   void trackAppOpened({
     required String version,
@@ -89,6 +118,8 @@ class AnalyticsService {
       'days_since_last_session': daysSinceLastSession,
       'onboarding_complete': onboardingComplete,
     });
+    // Flush immediately - critical for retention cohort analysis
+    flush();
   }
 
   // ============================================================
@@ -160,6 +191,8 @@ class AnalyticsService {
       'onboarding_version': onboardingVersion,
     });
     track('onboarding_flow'); // Ends the timed event
+    // Flush immediately - critical conversion event
+    flush();
   }
 
   /// Track default prescription applied (for skippers)
